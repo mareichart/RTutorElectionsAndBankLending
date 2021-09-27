@@ -1,0 +1,31 @@
+# First generate your problem set in the usual manner
+ps.name = "ElectionsAndBankLending"; sol.file = paste0(ps.name,"_sol.Rmd")
+libs = c("dplyr", "lfe", "stargazer", "ggplot2", "fst", "patchwork") # character vector of all packages you load in the problem set
+create.ps(sol.file=sol.file, ps.name=ps.name, user.name=NULL,libs=libs, stop.when.finished=FALSE)
+
+# This function creates a skeleton for your problem set package
+rtutor.package.skel(sol.file=sol.file, ps.name=ps.name,libs=libs,addons = "quiz",
+                    pkg.name="RTutorElectionsAndBankLending",   # Name of the problem set package
+                    pkg.parent.dir = "C:/Users/mreic/OneDrive/Dokumente/Masterarbeit/RTutor", # Parent directory 
+                    author="Markus Reichart", # Your name
+                    github.user="mareichart",     # Your github user name
+                    extra.code.file=NULL, # name of extra.code.file
+                    var.txt.file=NULL,    # name of var.txt.file
+                    overwrite=FALSE  # Do you want to override if package directory exists?
+)
+
+
+library(rsconnect)
+ps.name = "ElectionsAndBankLending" # problem set name
+libs = c("dplyr", "lfe", "stargazer", "ggplot2", "fst", "patchwork") # list of all libraries used by ps
+# Folder that contains your .rps file
+rps.dir = "C:/Users/mreic/OneDrive/Dokumente/Masterarbeit/RTutor"
+# Folder in which app shall be created
+app.dir = "C:/Users/mreic/OneDrive/Dokumente/Masterarbeit/RTutor/Shiny"
+rtutor.app.skel(ps.name=ps.name, app.name="RTutorElectionsAndBankLending",
+                app.dir=app.dir, rps.dir = rps.dir,
+                rps.app = TRUE, libs=libs,overwrite=TRUE)
+
+rsconnect::setAccountInfo(name='markusreichart',
+                          token='C8D331B5A5529A69956F49C98F01CF9D',
+                          secret='p50NCcWACDf2mmZLAnBSzS36beGC0nAQqmhSRKG+')

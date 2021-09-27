@@ -1,0 +1,1547 @@
+#< ignore
+
+```{r "0_1"}
+library(RTutor)
+# Adapt the working directory below and then run setup chunk in RStudio.
+setwd("C:/Users/mreic/OneDrive/Dokumente/Masterarbeit/RTutor")
+ps.name = "ElectionsAndBankLending"; sol.file = paste0(ps.name,"_sol.Rmd")
+libs = c("dplyr", "lfe", "stargazer", "ggplot2", "fst", "patchwork") # character vector of all packages you load in the problem set
+
+#name.rmd.chunks(sol.file)
+create.ps(sol.file=sol.file, ps.name=ps.name, libs=libs,addons = "quiz")
+          
+# The following line directly shows the problem set 
+# in the browser
+show.ps(ps.name,launch.browser=TRUE,
+  auto.save.code=FALSE,sample.solution=FALSE)
+```
+#>
+
+# The effect of county elections on savings banks lending
+
+Author: Markus Reichart
+
+##  Overview
+
+Welcome to this interactive RTutor problem set which is part of my master thesis at Ulm University. The thesis is based on the paper **"Electoral Cycles in Savings Bank Lending"**, published in 2017 by Florian Englmaier and Till Stowasser in the Journal of the European Economic Association. The article as well as the data are available online <a href="https://academic.oup.com/jeea/article/15/2/296/2691493?login=true" target="_blank">here</a>.
+
+The problem set is published on the following websites:
+- `Github`: https://github.com/mareichart/RTutorElectionsAndBankLending
+- `Shinyapps`: https://markusreichart.shinyapps.io/RTutorElectionsAndBankLending
+
+In Germany, governing politicians at county level have strong ties to local savings banks (German: "Sparkassen"). By law, the political representative of the savings bank's owner is the Chairman of both the Board of Directors and the Credit Committee of the bank (cf. e.g. Section 14 (1) Sentence 1 & Section 22 (1) Sentence 1, Sparkassengesetz BW). Since the savings banks are predominantly owned by the counties (rural counties and urban municipalities), this position is mostly held by the political representative of the county. This allows politicians to influence the lending behavior of the savings bank in their constituency. It raises the question: Do politicians use this power to their advantage? For example, they could increase lending before an upcoming county election in order to improve the economic condition, voter sentiment and ultimately their chances of re-election.
+
+The influence of politics on the business behavior of banks with regard to elections has already been investigated. However, the countries studied in this context are almost exclusively developing countries. One of the few exceptions is Vins (2008), a similar paper to the one of Englmaier and Stowasser (2017). It also analyzes German savings banks. The author found that the likelihood of branch closures and staff layoffs decreased significantly around an election. He also found that average spending on social and cultural support in the region rose before the elections. In addition, bank lending also increased. The latter was also analyzed by Englmaier and Stowasser and represents the main topic of this problem set. The goal is to determine the causal effect of county elections on savings bank lending, showing that savings banks systematically adjust their lending to the local election cycle.
+
+
+## Exercise Content
+
+$\qquad$  Content
+
+$\qquad$  1 Data overview
+
+$\qquad$ $\qquad$    1.1 Data-Transformation
+
+$\qquad$  2 The Difference-in-Differences appoach (DiD)
+
+$\qquad$ $\qquad$    2.1 Introducing DiD - Example Bavaria
+
+$\qquad$ $\qquad$    2.2 DiD - all states combined
+
+$\qquad$ $\qquad$    2.3 Excursus - The Impact of the financial crisis
+
+$\qquad$  3 DiD via linear Regression
+
+$\qquad$ $\qquad$    3.1 Basic specification
+
+$\qquad$ $\qquad$    3.2 Adding control variables
+
+$\qquad$  4 Additional analysis
+
+$\qquad$ $\qquad$ 4.1 Lending throughout the election cycle
+
+$\qquad$ $\qquad$ 4.2 The role of electoral competition
+
+$\qquad$ $\qquad$ 4.3 Default rates throughout the election cycle
+
+$\qquad$ 5 Conclusion
+
+$\qquad$ References
+
+$\qquad$ Appendix
+
+The problem set starts with a brief introduction to the data set.  While the underlying paper presents the finalized empirical analyses right away, we will introduce them step by step for didactic reasons.  Chapters 2 and 3.1 therefore do not appear in the paper in this form. In particular, exercise 2.3 is independent of the paper except for the data set. The empirical analyses from the paper are presented in exercises 3.2  and 4.
+
+## How to solve the problem set
+You can solve the tasks in any order. However, for the best possible experience, it is recommended that you complete the tasks in the given order. An important part of the exercises are code chunks, in which you are sometimes asked to enter R code yourself or to modify the existing code. To work on the code chunks, press `edit` first. To check and execute the entered code press `check`. If you have difficulty entering the correct R code, you can press the `hint` button to get help. You can also click on `solution` at any time to get the correct solution displayed immediately. With `run chunk` you can execute the code chunk without checking it. The two options `data` and `original code` are self-explanatory. You don't need any in-depth knowledge about R to solve the tasks, since the required commands are usually explained in infoboxes beforehand. Certainly, some experience with R is nevertheless helpful. You will also encounter some quizzes during the course of the problem set. Answering these questions is optional, but may help you to better understand certain topics.
+
+## Exercise 1 -- Data overview
+
+This chapter provides an overview of the data used in the course of the problem set. In order to perform the calculations, the authors use a large data set containing bank data on savings banks and cooperative banks (German: "Genossenschaftsbanken" or "Volksbanken Raiffeisenbanken"). The source of the data is *Hoppenstedt*. The reason why cooperative banks are included in the data set in addition to savings banks will be explained in the course of the problem set. In the future, savings banks will often be shortened with SB and cooperative banks with CB. In addition to bank data, the data set includes data on elections, county data and descriptive statistics. The authors collected the election data themselves by contacting statistical offices, the respective counties and historical archives. County data was obtained from the German Federal Statistical Office. I reduced the original dataset, which contains nearly 2000 variables, to the variables used in the problem set. In addition, I added variables needed for the analyses and renamed existing variables.
+
+At the beginning of each chapter, we will have to load the required data set first. Let us load the data `dataset.fst` using the command `read.fst()` and save it in variable `dat`.
+
+#< info "fst"
+There are lots of packages and commands that can be used to save or load a dataset. A simple and fast possibility is offered by the package `fst`. You can store a dataset on your disc with the command           `write.fst()` or retrieve them from your disc with the command `read.fst()`. 
+ 
+ ```{r eval=FALSE}
+  #You have to load the required package first
+  library(fst)
+  
+  #Load the data frame from your working directory
+  df <- read.fst("data.fst")
+  
+  #store a data frame to your working directory
+  write.fst(df, "data.fst")
+  
+  ``` 
+#>
+
+```{r "2_a"}
+dat <- read.fst("dataset.fst")
+```
+
+Let us now take a look at the first few rows of `dat` using command `head()`.
+```{r "2_a_2"}
+head(dat)
+```
+The output shows information about a bank with the `BankID` $1$. The variable `BankType` tells us whether the bank is a savings bank $SB$ or a cooperative bank $CB$. The indicator variable `SB` is derived directly from that collumn and takes the value 1 for SBs and the value 0 for CBs.
+The output shows data for the years 1987 to 1992. Overall, though, we want to observe the time period from 1987 to 2009 for each bank. The data set therefore has a panel structure. The column `BankLoans` shows the total sum of bank loans of the bank in the respective year. When we talk about bank loans in the course of this problem set, we will always refer to the total amount of loans (or a mathematically transformed value of this number) and not to individual loans or the total number of loans from a Bank. `BankLoans` as well as all other monetary variables are adjusted for inflation and measured in real 1995 euros. Furthermore, we can see the variable `StateID` which indicates in which state the bank is located. The states of Saxony and Saxony-Anhalt are not represented in the data set because the constituencies in these states have undergone several radical changes due to territorial reforms (cf. Englmaier & Stowasser, 2017, p.307). Therefore, we observe a total of 14 German states in our dataset. Bank $1$ is located in state $9$ which corresponds to Bavaria. We also see a number of other metrics which are introduced once they are used. 
+
+Let us start with a brief summary of the dataset. Press `check` to see how many savings and cooperative banks are in the sample as well as their average amount of bank loans in million euros per year.
+```{r "2_a_3"}
+#< task_notest
+dat %>%
+  group_by(BankType) %>%
+  summarise(Number_of_banks = n_distinct(BankID), mean_BankLoans = round(mean(BankLoans, na.rm=TRUE)/1e6))
+#>
+```
+We note that there are not even half as many savings banks as cooperative banks. In the vast majority of cases, there is one savings bank per county. As mergers between savings banks occur on a regular basis, their number is steadily decreasing. There are 8 banks that are actually called savings banks but are labeled as cooperative banks in the data set. This is because they are so-called "Freie Sparkassen" which do not grant politicians any influence on the bank's business activities. For our analyses, they are accordingly treated in the same way as cooperative banks.
+
+The average size of a savings bank's total bank lending is 1,326 million euros per year. This is more than twice as much as the amount of a cooperative bank, which lends an average of only 650 million euros.
+
+With this knowledge, let us take a closer look at the distribution of bank loans.
+```{r "2_a_4",fig.width=9}
+#< task_notest
+ggplot(data=dat, aes(x=BankLoans/1e9, fill = BankType)) + 
+  geom_histogram(breaks=seq(0, 5, by=0.04), 
+                 col="grey30", 
+                 alpha = .7) + 
+  labs(fill = "Bank Type")+
+  labs(title="Distribution of Bank Loans", x="BankLoans (in billion euros)", y="Number of obs.")+
+  geom_vline(aes(xintercept =median(BankLoans/1e9, na.rm = TRUE), colour = "median"), size=1.5, linetype="dashed")+
+  geom_vline(aes(xintercept =mean(BankLoans/1e9, na.rm = TRUE), colour = "mean"),size=1.5,linetype="dashed")+
+  scale_color_manual(name = "statistics", values = c(median = "blue", mean = "green"))+
+  scale_fill_manual(values = c("#00BFC4","#F8766D"))+
+  theme(plot.title = element_text(hjust = 0.5))
+#>
+```
+#< quiz "distribution"
+question: How would you describe the distribution of Bank_Loans based on this histogram?
+sc:
+    - skewed to the left
+    - symmetric
+    - skewed to the right*
+success: Thats true. 
+failure: Try again.
+
+#>
+
+From this plot, we can see that the distribution of `BankLoans` is clearly skewed to the right. The graph also reflects the finding that, on average, SBs' lending is greater than those of CBs. For the calculation of the causal effect of county elections on savings banks lending, we will use the variable `BankLoans_Norm_LOG` instead of `BankLoans`. A mini-exercise in the form of chapter 1.1 shows what `BankLoans_Norm_LOG` is composed of. We also explain why the authors transform the variable in the first place.
+
+Note: The total number of observations for the two bank types appear reasonably balanced in the plot containing 10343 observations for CBs and 8619 observations for SBs. The reason for this is that almost 63% of the values for lending at cooperative banks are missing, whereas only 28% are missing at savings banks. These missing values therefore do not appear in the plot.
+
+The table `dat` contains many variables that we are not interested in at the moment. Hence, let us create the table `mdat` from `dat` with the variables `BankID`, `BankType`, `Year`, `Elec` and `BankLoans` using the command `select()`. Show `mdat`.
+
+#< info "select"
+  `select()` can be used to subset the collumns of a table.
+ 
+  For example, this command returns only the columns `BankID` and `BankType` of the table `dat`:
+```{r eval=FALSE}
+  select(dat, BankID, BankType)
+```
+  You can find addidional information <a href="https://dplyr.tidyverse.org/reference/select.html" target="_blank">here</a> or by running the command `?select` in your R console.
+#>
+
+```{r "2_a_5"}
+mdat <- select(dat, BankID, BankType, Year, Elec, BankLoans)
+mdat
+```
+Table `mdat` is clearer than the entire data set and is consequently more suitable for the following operations. The variable `Elec` indicates whether or not a county election was held in the respective year. In the county where Bank 1 is located, elections were held in 1990, 1996, 2002 and 2008.
+
+Let us now create a table `onlySB` from `mdat` that only contains savings banks. Use the command `filter()` from package `dplyr`. Show 10 random rows of `onlySB` using `sample_n()`. 
+
+
+#< info "filter"
+  As the name implies, `filter()` can be used to filter a dataframe according to certain conditions. The output contains only those rows that satisfy all the conditions that were filtered for. Unlike `select()`, which creates a subset of columns, with `filter()` you create a subset of rows.
+ 
+  You can filter by a single condition, such as a specific year:
+```{r eval=FALSE}
+  filter(dat, Year==1999)
+```
+  Multiple conditions can also be linked together using the operators `&` (AND), `|` (OR) and `xor()` (XOR). For example, the `filter()` command for savings banks in an election year with lending of more than 20 billion euros looks like this:
+```{r eval=FALSE}
+  dat %>% filter(BankType=='SB' & Elec==1 & BankLoans>2e10)
+``` 
+  In this example, only the observations that satisfy all three conditions are displayed. Note that the pipe operator `%>%` was used here. `%>%` is very useful to combine multiple commands. That way the output of the previous statement (here: `dat`) becomes the input of the following one (here: `filter(...)`.
+  
+  For addidional information on `filter` click <a href="https://dplyr.tidyverse.org/reference/filter.html" target=" target="_blank">here</a> or run the command `?filter` in your R console.
+#>
+
+```{r "2_b_2"}
+onlySB <- mdat %>% filter(BankType=='SB')
+sample_n(onlySB,10)
+```
+We can see that the table `onlySB` now contains data on savings banks only. As mentioned earlier, the amount of bank loans in 28% of the observations of savings banks is missing in the dataset. According to that, with a probability of more than 96% ($1-(1-0.28)^{10}$), you can see at least one missing record for bank loans in the output above.
+
+Let us now pick out one particular bank (in this case, the one with `BankID` $6$) and have a look at that bank's lending over the 23-year period. The vertical dashed blue lines show the years in which an election was held in the bank's state.
+```{r "2_c"}
+#< task_notest
+BankNo <- 6
+BankExample <- onlySB %>% filter(BankID==BankNo)
+
+ggplot(data=BankExample, aes(Year,BankLoans/1e9)) +
+  geom_line(color="#F8766D",size=0.8) +
+  geom_point(color="#F8766D") +
+  geom_vline(xintercept =BankExample$Year[BankExample$Elec==1],color="blue",linetype="dashed")+
+  labs(title = paste("Bank No.",BankNo), y = "Bank Loans in Billion Euros")+
+  scale_x_continuous(breaks = BankExample$Year[BankExample$Elec==1])+
+  theme(plot.title = element_text(hjust = 0.5))
+#>
+```
+Several things can be gathered from the output of Bank 6. First of all, the bank is rather small. This can be seen from the low level of lending, which at around 500 million is much lower than the average lending of savings banks of over 1.3 billion. Moreover, lending tended to increase over the years. For example, lending increased by more than 50% between 1987 and 2009. And finally, the most important observation: Lending in election years appears to be higher compared to the other years. The amount of bank loans generally increased before an election and decreased thereafter. We will investigate whether this observation is statistical significant or just a coincidence in the next chapters.
+
+Feel free to look at other banks from the dataset. Simply edit the first line of the code chunk declaring the `BankNo` and replace the $6$ with a number between $1$ and $521$. Then press `check`.
+
+## Exercise 1.1 -- Mini-exercise: Data-Transformation
+Press `edit` and `check` afterwards to load the required dataset.
+```{r "3_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+Before we go on to the analytical parts of this Problem Set, let us clarify which variables are of interest to us. Since we want to study the impact of elections on bank lending, our two variables of interest are the Election varible `Elec` and the measure for bank loans `BankLoans_Norm_LOG`. The variable `Elec` indicates whether an election was held in the state in which the bank is located in the corresponding year (`Elec` $=1$) or not (`Elec`$=0$). For bank loans, we do not use the absolute value `BankLoans`, but instead normalize that value with total bank assets `BankTotAss` and logarithmize it. The authors normalize `BankLoans` to account for bank size effects. Normalizing also reduces the skew in the distribution of the variable. The log transformation allows us to interpret the results more easily. More on this later.
+
+The transformation from `BankLoans` to `BankLoans_Norm_LOG` will be performed in this chapter. First, let us have a look at the two columns that are needed for the transformation.
+```{r "3_a"}
+#< task_notest
+head(select(dat, BankLoans, BankTotAss),10)
+#>
+```
+
+Let us now create the column `BankLoans_Norm_LOG` in `dat` by normalizing the bank loans with the total assets and then logarithmizing this ratio. `BankLoans_Norm_LOG` therefore has the following value: $log(\frac{BankLoans}{BankTotAss})$. Use functions `mutate()` and `log()` to create the new variable.
+
+#< info "mutate"
+  The function `mutate()` from package `dplyr` can be used to add new variables to a data frame or to overwrite existing ones. 
+ 
+  For example, a new column can be added to the data frame from the product of two existing columns. The following command adds/overwrites the variable `ElecxSB` with the product of `Elec` and `SB`. Thus, `ElecxSB` takes the value $1$ if both `Elec` and `SB` take the value $1$ - i.e. for savings banks in an election year.
+```{r eval=FALSE}
+dat <- dat %>%
+  mutate(ElecxSB = SB * Elec)
+``` 
+You can find addidional information <a href="https://dplyr.tidyverse.org/reference/mutate.html" target="_blank">here</a> or by running the command `?mutate` in your R console.
+#>
+
+```{r "3_a_2"}
+dat <- dat %>% mutate(BankLoans_Norm_LOG=log(BankLoans/BankTotAss))
+
+#< hint
+hint.stud.call(dat %>% mutate(BankLoans_Norm_LOG=log(BankLoans/BankTotAss)),"Great! The calculation is correct. But you also have to save the new dataset.")
+
+auto.hint.else()
+#>
+```
+
+Let us have a look at the transformed variable `BankLoans_Norm_LOG`. Press `check`.
+```{r "3_a_3"}
+#< task_notest
+head(select(dat, BankLoans, BankTotAss, BankLoans_Norm_LOG),10)
+#>
+```
+Let us verify the value of `BankLoans_Norm_LOG` for the first observation: $5111808000/8678057600=0.58905$ and $log(0.58905)=-0.52924$. From this we conclude that the transformation seems to be correct.
+
+Finally, let us compare the distribution of `BankLoans_Norm_LOG` with the distribution of `BankLoans`. Press `check`.
+```{r "3_a_4",fig.width=10}
+#< task_notest
+p1 <- ggplot(data=dat, aes(x=BankLoans/1e9, fill = BankType)) + 
+  geom_histogram(breaks=seq(0, 5, by=0.08), 
+                 col="grey30", 
+                 alpha = .7) + 
+  labs(fill = "Bank Type")+
+  labs(title="Distribution of Bank Loans", x="BankLoans (in billion euros)", y="Number of obs.")+
+  geom_vline(aes(xintercept =median(BankLoans/1e9, na.rm = TRUE), colour = "median"), size=1.5, linetype="dashed")+
+  geom_vline(aes(xintercept =mean(BankLoans/1e9, na.rm = TRUE), colour = "mean"),size=1.5,linetype="dashed")+
+  scale_color_manual(name = "statistics", values = c(median = "blue", mean = "green"))+
+  scale_fill_manual(values = c("#00BFC4","#F8766D"))+
+  theme(legend.position="none")
+
+p2 <- ggplot(data=dat, aes(x=BankLoans_Norm_LOG, fill = BankType)) + 
+  geom_histogram(breaks=seq(-1, 0, by=0.02), 
+                 col="grey30", 
+                 alpha = .7) + 
+  labs(fill = "Bank Type")+
+  labs(title="Distribution of Bank Loans (normalized and logarithmized)", y="Number of obs.")+
+  geom_vline(aes(xintercept =median(dat$BankLoans_Norm_LOG, na.rm = TRUE), colour = "median"), size=1.5, linetype="dashed")+
+  geom_vline(aes(xintercept =mean(dat$BankLoans_Norm_LOG, na.rm = TRUE), colour = "mean"),size=1.5,linetype="dashed")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_fill_manual(values = c("#00BFC4","#F8766D"))+
+  scale_color_manual(name = "statistics", values = c(median = "blue", mean = "green"))
+
+p1 + p2
+#>
+```
+We see that `BankLoans_Norm_LOG` is now skewed to the left. The magnitude of the skew is much smaller than for `BankLoans`. This is also reflected in a smaller gap between mean and median values. 
+
+#< quiz "distribution of SBs and CBs"
+question: On average, are SBs still larger than CBs in terms of transformed lending?
+sc:
+    - No, CBs are now larger than SBs.*
+    - Yes, nothing has changed in this regard.
+success: Thats true. 
+failure: Try again.
+
+#>
+The distribution of savings banks and cooperative banks is much more balanced now. The direction has also changed: Transformed lending is slightly lower on average for SBs than for CBs.
+
+Note: Throughout the problem, we often refer to normalized lending when interpreting the results. Normalized lending describes the variable: $\frac{BankLoans}{BankTotAss}$.
+
+As we have introduced the most important variables now, we can get to the actual topic of the thesis in the next chapter.
+
+
+## Exercise 2 -- Estimating causal effects with the Difference-In-Differences approach 
+
+Our estimation of the causal effect of county elections on SB lending is based on the difference-in-differences (DiD) approach. This approach is presented in detail in the next chapters. Chapter 2.1 illustrates the DiD approach graphically. It also provides a first example of how the approach can be used to calculate the causal effect for Bavarian banks only. In section 2.2, we repeat this calculation, but this time with all German banks from the dataset. Chapter 2.3 is an excursus that goes into more detail on an observation that we made in chapter 2.2.
+
+### The difference-in-difference (DiD) approach
+The DiD approach is a research design that is used to estimate the causal effect of a treatment on some type of response (cf. Green, 2018, p.167). Economics is a popular field in which the DiD approach is applied. For instance, the approach is used to study the impact of political decisions such as the introduction of a CO2 tax on CO2 emissions (Andersson, 2019). Another example examining the impact of a political decision is Card and Krueger (1994). They examined how an increase in the minimum wage in New Jersey affected employment at fast-food restaurants. A final example from the literature is Blake et al. (2015) which examines how turning off Ebay's paid search ads (as an experiment) affects the company's revenue. Englmaier and Stowasser use the approach to examine the impact of county elections on savings bank lending. Hence, elections are the treatment and bank lending is the response. 
+
+
+## Exercise 2.1 -- Introducing the DiD approach using Bavaria as an example
+
+Press `edit` and then `check` to load the required dataset.
+```{r "4_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+The aim of this chapter is to introduce the DiD approach. We first address the basic idea of the approach and then compute the DiD estimator for Bavaria only. In addition, we raise the question of whether a key assumption of the DiD approach is satisfied in this particular example.
+
+In this chapter we are only interested in data from Bavaria (state $9$). Let us therefore store all the data from the Bavarian banks in the table `bdat`. Use function `filter()`.
+```{r "4_2"}
+bdat <- dat %>%
+  filter(StateID==9)
+#< task
+
+sample_n(bdat,5)
+#>
+```
+We can see that the table `bdat` has the same variables as `dat` but only contains observations from state $9$.
+
+Now we want to take a look at the development of bank lending in Bavaria over the 23 years from 1987 to 2009. Since the data set contains 445 Bavarian banks, it would be very time-consuming to look at each bank individually. Instead, we want to generate one graph per bank type by computing the average lending for each year. Therefore, we need to calculate the average lending for each combination of `BankType` and `Year` resulting in a total of 46 averages. To do this, use the `dplyr` functions `group_by()` and `summarise()`. Note that from now on we will use the variable `BankLoans_Norm_LOG` to measure lending.
+
+#< info "group_by and summarise"
+### group_by
+`group_by` allows the user to convert a table into a grouped table. Operations can then be performed by group.
+### summarise
+With `summarise` all observations of each group can be summarized in any way. For example, you can calculate the mean, the maximum, or the number of observations of a variable by group. If the table is not grouped, all observations are summarized. A new data frame will be created.
+
+
+To illustrate the two commands, let us now take a look at an example.
+```{r eval=FALSE}
+dat %>%
+  group_by(StateID, BankType) %>%
+  summarise(n=n_distinct(BankID))
+``` 
+The code chunk first groups the table `dat` by `StateID` and `BankType`. Then, for each combination of those two variables, the number of different `BankID`s is counted with the command `n_distinct`. We obtain a table containing the number of CBs and SBs for each state. So the first six lines of the output look like this
+```
+   StateID BankType     n
+ 1       1 CB          44
+ 2       1 SB          19
+ 3       2 CB           4
+ 4       2 SB           1
+ 5       3 CB         135
+ 6       3 SB          60
+```
+
+For addidional information on `summarise` click <a href="https://dplyr.tidyverse.org/reference/summarise.html" target="_blank">here</a> or run the command `?summarize` in your R console.
+#>
+
+Now, calculate the average lending for both `BankType`s and for each `Year.` Fill in the blanks.
+```{r "4_2"}
+#< fill_in
+# bav <- bdat %>%
+#   ___(___, ___) %>%
+#   ___(avg = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+#>
+bav <- bdat %>%
+  group_by(BankType, Year) %>%
+  summarise(avg = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+```
+With the help of this table, we can now take a look at the lending activities of Bavarian banks. Let us start with the savings banks first and add the cooperative banks later.
+```{r "4_2"}
+#< task_notest
+ggplot(data=subset(bav,BankType=="SB"), aes(x=Year, y=avg, color=BankType)) + 
+  geom_line(size=0.8)+
+  geom_point() +
+  geom_vline(xintercept =c(1990,1996,2002,2008), colour ="blue",linetype="dashed")+
+  labs(title = "Average lending by Bavarian savings banks", y = "Avg. Bank Loans (norm. & log.)")+
+  ylim(-0.44,-0.24)+
+  scale_color_manual(values = "#F8766D")+
+  theme(plot.title = element_text(hjust = 0.5))
+#>
+```
+The plot shows how the average normalized and logarithmized total bank loans of savings banks in Bavaria have developed from 1987 to 2010. For all Bavarian banks, the elections took place in the same years. The elections are marked with vertical dashed blue lines.
+
+If we look at the first election, we see that lending increases slightly in the election year. However, compared to the markedly higher lending in the years following the election, election-year lending is rather low. The situation is different for the elections in 1996, 2002 and 2008. In each of these years, lending reached local extremes compared with the years before and after. Particularly in 1996 and 2008, lending was well above average. All in all, it looks like lending was higher in election years than in non-election years.
+
+Let us validate this observation by calculating the average savings bank lending in election years and non-election years. If we obtain a larger value for election years, our observation was correct.
+
+**Task:** Calculate the average Bavarian savings banks lending in election years and non-election years using the table `bdat`. Remember: `bdat` already contains Bavarian banks only. Fill in the blanks. 
+```{r "4_3"}
+#< fill_in
+# bSB <- bdat %>% 
+#   filter(___)%>%
+#   group_by(___)%>%
+#   summarise(avg = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+# bSB
+#>
+bSB <- bdat %>% 
+  filter(BankType=='SB')%>%
+  group_by(Elec)%>%
+  summarise(avg = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+bSB
+```
+We obtain as a result that the average value of `BankLoans_Norm_LOG` in election years is $-0.35946383$ and $-0.37414845$ in non-election years. So, average lending in election years was higher than in non-election years. Now we want to calculate by how much exactly. Instead of computing the difference with a calculator, we would like to do this directly in R. The reason for this is that we will need this value again later on. So let us subtract the average of the non-election year from the average of the election year and store the value in the variable `DeltaSB`.
+```{r "4_3"}
+#< fill_in
+# DeltaSB <- bSB$avg[___]-bSB$avg[___]
+# round(DeltaSB, digits = 6)
+#>
+DeltaSB <- bSB$avg[2]-bSB$avg[1]
+round(DeltaSB, digits = 6)
+
+```
+The average value of normalized and logarithmized bank loans in election years is almost $0.015$ higher than in non-election years. How can we interpret this value?
+
+#< info "Linear approximation of the logarithm with the Taylor series"
+  When $x$ takes a value close to $1$, $log(x)$ can be linearly approximated using the first-order Taylor polynomial.
+  $$log(x)\overset{x~near~1}\approx\log(1)+\frac{log(1)^\prime}{1!} * (x-1)=0 + \frac{1}{1}*(x-1) = x-1$$
+#>
+
+Let us denote the average **normalized** bank loans with $\bar{y}^1$ in election years and with $\bar{y}^0$ in non-election years. It follows that $log(\bar{y}^1)-log(\bar{y}^0)$ is equal to about $0.015$. We can now approximate the difference of two logarithms as follows.
+$$log(\bar{y}^1)-log(\bar{y}^0) = log(\frac{\bar{y}^1}{\bar{y}^0})\approx \frac{\bar{y}^1}{\bar{y}^0}-1\Leftrightarrow\bar{y}^1\approx1.015*\bar{y}^0$$
+#< quiz "Interpretation of the log difference"
+question: So how can we interpret this? Average normalized lending is about 1.5 ...
+sc:
+    - ... percentage points higher in election years compared to non-election years
+    - ... percentage points lower in election years compared to non-election years
+    - ... percent higher in election years compared to non-election years*
+    - ... percent lower in election years compared to non-election years
+success: Thats true. 
+failure: Try again.
+
+#>
+
+We obtain that the average **normalized** lending of savings banks in election years is about 1.5 **percent** higher than in non-election years. Our observation that lending in Bavaria was comparatively high in election years is correct.
+
+However, this finding alone does not necessarily indicate a causal effect. First, it should be noted that we have only examined the lending activities of a single state here. The sample size is therefore still quite small. Another and much more important point is that elections are certainly not the only factors affecting bank lending. For example, the boom following German reunification may have triggered the rise in bank lending after 1990. Another example is the sharp decline in lending in 2009 which likely can be explained by the weak economy during the financial crisis. Thus, it is not possible to determine whether elections alone were responsible for the 1.5% higher normalized lending in election years. 
+
+To identify the causal effect of elections on savings bank lending despite these other factors, the authors use the DiD approach. It is the basic principle of the DiD approach to compare a group exposed to a treatment with a control group that is not affected by the treatment. The authors chose cooperative banks as the control group. County elections are the treatment. Before we delve deeper into the approach, let us take a look at the plot that shows both SB and CB lending in Bavaria. Press `check`.
+```{r "4_4"}
+#< task_notest
+ggplot(data=bav, aes(x=Year, y=avg, color=BankType)) + 
+  geom_line(size=0.8)+
+  geom_point() +
+  geom_vline(xintercept =c(1990,1996,2002,2008), colour ="blue",linetype="dashed")+
+  labs(title = "Average lending by Bavarian banks", y = "Avg. Bank Loans (norm. & log.)")+
+  ylim(-0.44,-0.24)+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  theme(plot.title = element_text(hjust = 0.5))
+#>
+```
+Among cooperative banks, we do not see the trend of rising lending in the election year and falling lending thereafter. No particularly high levels of CB lending can be observed in election years. Overall, cooperative bank lending in election years appears to be about average.
+
+Let us again check this observation by calculating the average lending in election years and non-election years. In this step we also calculate the difference between the two averages and store it in the variable `DeltaCB`. We will use this value again later on.
+```{r "4_4"}
+#< task_notest
+bCB <- bdat %>% 
+  filter(BankType=='CB')%>%
+  group_by(Elec)%>%
+  summarise(avg = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+bCB
+DeltaCB <- bCB$avg[2]-bCB$avg[1]
+round(DeltaCB, digits = 6)
+#>
+```
+For cooperative banks in an election year, the average lending is $-0.33527249$. In non-election years, the average is slightly lower at $-0.33685311$. So, cooperative bank lending in election years is also larger than lending in non-election years, but only by approximately 0.0016. Thus, for Bavarian cooperative banks, average **normalized** lending in election years is about 0.16% larger than in non-election years.
+
+But what is the point of this observation, given that we are only interested in the impact of elections on savings banks?
+
+As noted above, it is not sufficient to look only at savings bank lending to determine the causal effect. Therefore, the authors compare the lending activities of savings banks with the lending activities of cooperative banks. The latter are well suited as a control group insofar as they are also regionally structured, have a similar customer base and almost the same business model. As a result, economic aspects should influence lending of savings banks and cooperative banks to the same extent. An important difference to savings banks, however, is that politicians cannot influence the business policies of cooperative banks. That is why political aspects, such as elections, should only influence the lending activities of savings banks, but not those of cooperative banks. These aspects lead us to the main assumption of the difference-in-differences approach: The **parallel trend assumption**.
+
+### The parallel trend assumption
+The assumption of parallel trends is based on the premise that "in the absence of the treatment,
+the average outcomes for the treated and control groups would have followed parallel paths over time." (Abadie, 2005, p.1) Applied to our example, this means that without the influence of elections, the average lending of SBs and CBs would have followed a parallel path. We assume that the lending behavior of SBs and CBs differs only because of the influence of elections. It is important that the parallel trend assumption is not violated. The estimate of the causal effect would otherwise be biased (cf. Lechner, 2011, p.180).
+
+So what would the chart of cooperative bank lending ideally look like? In terms of cycles and upward and downward swings, the development of lending by the two bank types would be very similar, thus satisfying the assumption of parallel trends. The two trends would differ particularly in election years, where savings banks would show relatively high lending. This would indicate election-induced lending by savings banks, thus fulfilling our main hypothesis. In post-election years, the trend of SBs would likely flatten somewhat compared to that of CBs to compensate for the increased lending in the election year.
+
+At least in terms of the parallel trend assumption, the actual graph for Bavaria deviates considerably from this ideal. Hardly any parallel sections can be identified. Especially after 2001, the two graphs behave very differently. While CB lending declined almost permanently from 2001 to 2008, SBs showed a notable increase in their lending during the same period. I think it's unlikely that the two elections alone were responsible for such a different development of SB and CB lending. Whether the parallel trend assumption applies in this specific case is therefore questionable. It is worth noting that the authors included additional control variables in their regressions. Since these variables may explain part of the difference in lending behavior between the two types of banks, the parallel trend assumption is somewhat weakened. These variables are presented in chapter 3.2. We therefore assume that the assumption of a parallel trend is fulfilled for the authors' regressions that we present in chapters 3.2 and 4. We should be aware, however, that the parallel trend assumption is probably not satisfied for this example of Bavaria.
+
+### The Difference-in-Differences estimator
+We will now estimate the causal effect of county elections in Bavaria on Bavarian SB lending with the difference-in-differences estimator. Let us first visualize how the DiD estimator is composed with the following illustration. The values in the graph do not match our example. Press `check`.
+
+```{r "4_4"}
+#< task_notest
+ggplot()+ 
+  geom_point(aes(x=0, y=1, colour="Treat"), size=2.5)+
+  geom_point(aes(x=1, y=2, colour="Treat"), size=2.5)+
+  geom_point(aes(x=1, y=1.3, colour="Treat"), size=2.5)+
+  geom_point(aes(x=0, y=0.5, colour="Control"), size=2.5)+
+  geom_point(aes(x=1, y=0.8, colour="Control"), size=2.5)+
+  labs(title = "DiD estimator", x = "Treatment" , y = "Outcome")+
+  geom_segment(aes(x=0, y=1, xend=1, yend=2, colour="Treat"),size=1.2)+
+  geom_segment(aes(x=0, y=0.5, xend=1, yend=0.8, colour="Control"),size=1.2)+
+  geom_segment(aes(x=0, y=1, xend=1, yend=1.3, colour="Treat"),size=1.2, linetype="dashed")+
+  geom_segment(aes(x=0.5, y=0.7, xend=0.5, yend=1.1),size=0.8, arrow = arrow(length = unit(0.5, "cm")))+
+  scale_color_manual(name = "Group", values = c(Treat = "#F8766D", Control = "#00BFC4"))+
+  geom_errorbar(mapping=aes(x=1.06, ymin = 1, ymax = 2), width = 0.05, size=0.8, colour="black")+
+  geom_errorbar(mapping=aes(x=1.0, ymin = 1.3, ymax = 2), width = 0.05, size=1.3, colour="black")+
+  geom_errorbar(mapping=aes(x=1.06, ymin = 0.5, ymax = 0.8), width = 0.05, size=0.8, colour="black")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_x_continuous(breaks = c(0,1), limits = c(-0.2,1.3))+
+  ylim(0,2)+
+  annotate("text", x = 1.2, y = 0.65, label = "Delta*bar(Y)[Control]",parse = TRUE,size=5)+
+  annotate("text", x = 0.91, y = 1.65, label = "DiD",parse = TRUE,size=6)+
+  annotate("text", x = 1.18, y = 1.5, label = "Delta*bar(Y)[Treat]",parse = TRUE,size=5)
+#>
+```
+The DiD approach examines the causal effect of a treatment on the outcome of interest. Observations are divided into two time periods - a period in which no treatment occurs ($Treatment=0$) and a period in which the treatment occurs ($Treatment=1$). Also, as mentioned earlier, there are two groups: a treatment group and a control group. While treatment does not affect the control group, it does affect the outcome of interest for the treatment group.
+
+For each of the 4 subsets (2 periods $\times$ 2 groups), we calculate the average outcome. Let us call this value $\bar{Y}^{t}_{j}$, with $t\in\left\{ 0;1 \right\}$ indicating the period and $j\in\left\{ Treat;Control \right\}$ indicating the group.
+
+The basic assumption is that in the absence of the treatment, the change from $\bar{Y}^{0}_{Treat}$ to $\bar{Y}^{1}_{Treat}$ would have been identical to the change in the control group. In the graph, the dashed line visualizes this assumption. It has the same slope as the line of the control group, but is shifted upward to account for the higher outcome of the treatment group without treatment (in this example). In our case, this means assuming that if elections had no effect on lending, the difference in lending between non-election years and election years would be the same for savings banks as for cooperative banks. This allows us to estimate the causal effect of the treatment by subtracting the theoretical change without treatment (which corresponds to the observed change in the control group) from the actual observed change in the treatment group.
+
+Thus, we obtain the following formula for the calculation of the DiD estimator:
+$$
+DiD = \Delta\bar{Y}_{Treat}-\Delta\bar{Y}_{Control}= (\bar{Y}^{1}_{Treat}-\bar{Y}^{0}_{Treat})- (\bar{Y}^{1}_{Control}-\bar{Y}^{0}_{Control})
+$$
+In the course of this chapter we have already calculated the values for $\Delta\bar{Y}_{Treat}$ and $\Delta\bar{Y}_{Control}$ for our example of bank lending in Bavaria. For $\Delta\bar{Y}_{Treat}$ we obtained a value of $0.014685$ and stored it as the variable `DeltaSB`. We determined 0.001581 as the value of $\Delta\bar{Y}_{Control}$ and stored it as the variable `DeltaCB`. Let us therefore proceed straight to the calculation of the DiD estimator. 
+
+Compute the value of the DiD estimator using the variables `DeltaSB` and `DeltaCB`. Fill in the blanks.
+```{r "6_4"}
+#< fill_in
+# DiD = ___ - ___
+# round(DiD, digits = 6)
+#>
+DiD = DeltaSB - DeltaCB
+round(DiD, digits = 6)
+```
+The DiD estimator has a value of $0.013104$? How can we interpet this result?
+
+It means that if the parallel trend assumption is satisfied, there is a positive causal effect of county elections on savings bank lending of $0.013104$ in Bavaria. This value means that our estimate of the response variable `BankLoans_Norm_LOG` is increased by $0.013104$ if the bank is a savings bank in an election year. Once again, this figure can also be interpreted as a percentage increase in **normalized** bank loans of about $1.3\%$ for savings banks compared to cooperative banks. In our regressions, we are mainly interested in this estimator. 
+
+### Conclusion
+We cannot directly measure the effect of an election on savings banks' lending, because to do so, we need to know what the lending would have been without an election. To estimate this value, the authors assume that if elections had no influence on lending, the difference in lending from non-election years to election years would be the same for savings banks and for cooperative banks. This assumption is called the *parallel trends assumption*. The difference between actual observed lending in the election year and our estimated lending if elections had no effect on savings banks' lending is called the DiD estimator. In the example, the DiD estimator has a value of about 0.013.
+
+I think it is questionable whether the assumption of a parallel trend is fulfilled here since lending by the two bank types has developed very differently in Bavaria over the observation period. Thus, the estimate of the causal effect could be biased.
+
+
+## Exercise 2.2 -- The DiD estimator - all states combined
+
+Press `edit` and then `check` to load the required dataset.
+```{r "4_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+Having already calculated the causal effect of county elections on savings bank lending in Bavaria, we now want to apply this example to all German states combined.
+
+Let us start again with a chart showing the average lending of SBs and CBs of all German states. We also want to include elections in the plot. Since election years differ from state to state, it would not make any sense to display the plot in the same way as in the previous chapter. Instead, we plot each year with reference to the election year. For example, for `ElecWhen`$=-1$, we plot the average `BankLoans_Norm_LOG` of all banks one year ahead of an election, split into SB and CB. Press `check`.
+```{r "4_5"}
+#< task_notest
+pdat <- dat %>%
+  filter(is.na(ElecWhen) == FALSE) %>% 
+  group_by(BankType, ElecWhen) %>%
+  summarise(mean = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+
+plot1 <- ggplot(data=pdat, aes(x=ElecWhen, y=mean, color=BankType)) + 
+  geom_line(size=0.8)+
+  geom_point()+
+  geom_vline(xintercept =0, colour ="blue",linetype="dashed")+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  labs(title = "Average lending by German banks", x = "Year (relative to election)" , y = "Avg. Bank Loans (norm. & log.)")+
+  theme(plot.title = element_text(hjust = 0.5))
+plot1
+#>
+```
+We see that savings bank lending is generally lower than those of cooperative banks. `plot1` further shows us that for cooperative banks, lending declines sharply in the election year and then rises again by about the same magnitude two years later. Thus, lending in the election year as well as in the year after is much lower than usual. This observation is surprising since elections should not have much of an impact on cooperative bank lending. In the next chapter, we will take a closer look at this observation in an excursus and examine how the financial crisis in 2009 may have affected the graph.
+
+Unfortunately, the anticipated increase in SB lending in the election year cannot be confirmed with this plot. SBs even recorded a slight decline in lending from the pre-election year to the election year. Overall, however, lending in the election year is still about average. 
+
+So how do we interpret this chart in terms of the difference-in-differences approach? In the election year and the year after, lending generally decreased. We derive this statement from the decline in CB lending. Yet we do not interpret this decline as a causal effect of elections, but as a trend over time (or simply as a coincidence). However, we interpret the observation that savings bank lending hardly declined in the same period as a causal effect of elections. If elections had no impact on savings banks' lending, we would have expected a similar decline for them as for cooperative banks. We use the difference-in-differences approach to calculate how much the development of SB and CB lending differs. As a result, we obtain the causal effect of elections on savings bank lending. 
+
+Again: This method is based on the parallel trend assumption. Since the above chart only covers 5 points in time, we cannot use it to make a meaningful statement about the assumption of parallel trends. However, since the other states besides Bavaria also show little parallelism (4 of them are shown in the next chapter), I think it is debatable whether the parallel trends assumption is fulfilled for all states.
+
+Nevertheless, we now want to calculate the DiD estimator for all states. For this purpose, we use the formula already known from 2.1: $DiD = (\bar{Y}^{1}_{Treat}-\bar{Y}^{0}_{Treat})- (\bar{Y}^{1}_{Control}-\bar{Y}^{0}_{Control})$
+
+We first have to calculate the required mean values of those four subsets.
+
+Let us generate a dataframe `mdat` containing the mean value of `BankLoans_Norm_LOG` for all four combinations of `BankType` (group) and `Elec` (period). The result should look like this:
+```
+  BankType  Elec   mean
+1 CB           0 -0.318
+2 CB           1 -0.331
+3 SB           0 -0.382
+4 SB           1 -0.384
+```
+
+Complete the code below:
+```{r "6_2"}
+#< fill_in
+# mdat <- dat %>%
+#   filter(!is.na(Elec)) %>%    #filters out missing values for Elec
+#   group_by(___ , ___)%>%
+#   summarise(mean=___(___ , na.rm = TRUE))
+# mdat
+#>
+mdat <- dat %>%
+  filter(!is.na(Elec)) %>% 
+  group_by(BankType,Elec)%>%
+  summarise(mean=mean(BankLoans_Norm_LOG, na.rm = TRUE))
+mdat
+```
+
+To simplify the calculation, let us assign variable names to the average values. 
+
+  - `noelec` stands for the period in which no treatment takes place
+  - `elec` stands for the period in which the treatment takes place
+  - `co`  stands for control group
+  - `tr`  stands for treatment group
+
+```{r "6_3"}
+#< fill_in
+# y.noelec.co = mdat$mean[1]
+# y.noelec.tr = ___
+# y.elec.co = ___  
+# y.elec.tr = ___
+#>
+y.noelec.co = mdat$mean[1]
+y.noelec.tr = mdat$mean[3]
+y.elec.co = mdat$mean[2]  
+y.elec.tr = mdat$mean[4]
+```
+
+Let us now calculate the DiD estimator with these 4 variables using the formula presented above. Fill in the blank.
+```{r "6_4"}
+#< fill_in
+# DiD = ___
+# round(DiD, digits = 6)
+#>
+DiD = (y.elec.tr-y.noelec.tr) - (y.elec.co-y.noelec.co)
+round(DiD, digits = 6)
+```
+For the DiD estimator, we obtain a value of 0.011847, which is similar to the result for Bavaria in the previous exercise. The interpretation is the same, but refers to the whole of Germany.
+
+So, if the parallel trend assumption is satisfied, there is a positive causal effect of county elections on savings bank lending of $0.011847$. This value can once again be interpreted to mean that elections increase **normalized** savings bank lending by about 1.2%. In our regressions, we are mainly interested in this estimator.
+
+
+Finally, here is a graph that further illustrates the interpretation of the DiD estimator in this example (Germany as a whole). Press `check`.
+```{r "6_5"}
+#< task_notest
+ggplot(data=mdat, aes(x=Elec, y=mean, color=BankType))+ 
+  geom_point(size=2.5)+
+  labs(title = "DiD estimator", x = "Elec" , y = "Avg. Bank Loans (norm. & log.)")+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  geom_segment(x=0, y=mdat$mean[1], xend=1, yend=mdat$mean[2], size=1.5, colour="#00BFC4")+
+  geom_segment(x=0, y=mdat$mean[3], xend=1, yend=mdat$mean[4], size=1.5, colour="#F8766D")+
+  geom_segment(x=0, y=mdat$mean[3], xend=1, yend=mdat$mean[3]-(mdat$mean[1]-mdat$mean[2]), size=1.2, colour="#F8766D", linetype="dashed")+
+  geom_point(x=1, y=mdat$mean[3]-(mdat$mean[1]-mdat$mean[2]), size=2.5, colour="#F8766D")+
+  geom_errorbar(mapping=aes(x=1, ymin = mdat$mean[4], ymax = mdat$mean[3]-(mdat$mean[1]-mdat$mean[2])), width = 0.05, size=1, colour="black")+
+  geom_text(x = 1.07, y = -0.39, label = "DiD", size=5, color = "black")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_x_continuous(breaks = c(0,1), limits = c(-0.2,1.2))
+#>
+```
+Cooperative bank lending declines markedly in election years compared to non-election years. This decline is substantially smaller in the case of savings banks. We assume that the difference in the two slopes is due to the effect of elections. If the parallel trend assumption holds, this results in a positive causal effect of elections on the lending of savings banks of around 0.012 or 1.2%.
+
+## Exercise 2.3 -- Excursus - The Impact of the financial crisis
+
+Press `edit` and then `check` to load the required dataset.
+```{r "5_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+This chapter is a supplement to the previous chapter. Since this chapter does not provide statistical methods that are relevant to the rest of the problem set, it can be skipped if desired. The following section examines the surprising decline in lending in both the election year and the year after which was prominent among cooperative banks in `plot1`.
+
+One possible explanation for the unexpectedly large drop in lending in the election year is that lending in that year may have been negatively skewed by the financial crisis. As seen in the plot of Bavaria's lending, lending dropped sharply in 2009. This decline can also be observed in other German states as we can see from the plots of states 5 (North Rhine-Westphalia), 6 (Hesse), 7 (Rhineland-Palatinate) and 8 (Baden-W&uuml;rttemberg):
+```{r "5_1",fig.width=8}
+#< task_notest
+  b <- dat %>%
+    group_by(BankType, Year,StateID) %>%
+    summarise(mean = mean(BankLoans_Norm_LOG, na.rm=TRUE))
+
+  ggplot(data=subset(b,StateID %in% c(5:8)), aes(x=Year, y=mean, color=BankType)) + 
+  geom_line(size=0.8)+
+  labs(title = "States 5 (NW), 6 (HS), 7 (RP) and 8 (BW)",  y = "Avg. Bank Loans (norm. & log.)")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  facet_wrap(~ StateID)
+#>
+``` 
+Now, if many states had an election in 2009, this drop in lending could have a big impact on `plot1`. Let us examine how many banks are located in states with an election in 2009.
+```{r "5_2"}
+#< task_notest
+dat %>%
+  group_by(BankType,Elec) %>%
+  filter(Year==2009) %>%
+  summarise(n=n_distinct(BankID))
+#>
+``` 
+We see that nearly one in two cooperative banks and more than half of savings banks are located in a state where an election was held in 2009. This is due to the fact that elections were held in 6 of the 14 observed states in 2009, including states with many banks such as Baden-W&uuml;rttemberg and North Rhine-Westphalia. Overall, 48.6% of the observed banks are located in these 6 states. Considering that elections take place on average only about every 5 years, this figure is very high.
+
+Since we have found out that an unusually large number of banks had an election in the year of the financial crisis, in which lending was low, we will now recreate the plot from the previous exercise. But this time, we will not include the year 2009. In order to see the differences from the original plot more easily, `plot1` is generated again on the right side.
+```{r "5_3",fig.width=10}
+#< task_notest
+mdat <- dat %>%
+  filter(is.na(ElecWhen) == FALSE) %>% 
+  group_by(BankType, ElecWhen) %>%
+  summarise(meanold = mean(BankLoans_Norm_LOG, na.rm=TRUE), meannew=mean(BankLoans_Norm_LOG[Year!=2009], na.rm=TRUE))
+
+plot2 <- ggplot(data=mdat, aes(x=ElecWhen, y=meannew, color=BankType)) + 
+  geom_line(size=0.8)+
+  geom_point()+
+  geom_vline(xintercept =0, colour ="blue",linetype="dashed")+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  labs(title = "Average lending without 2009", x = "Year (relative to election)" , y = "Avg. Bank Loans (norm. & log.)")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position="none")+
+  ylim(-0.387,-0.307)
+
+plot1 <- ggplot(data=mdat, aes(x=ElecWhen, y=meanold, color=BankType)) + 
+  geom_line(size=0.8)+
+  geom_point()+
+  geom_vline(xintercept =0, colour ="blue",linetype="dashed")+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  labs(title = "Average lending", x = "Year (relative to election)" , y = "Avg. Bank Loans (norm. & log.)")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ylim(-0.387,-0.307)
+plot2 + plot1
+#>
+``` 
+As expected, omitting the year 2009 substantially reduces the decline in CB lending in the election year. It is noticeable that apart from the election year, the year after the election has also changed considerably. This can be explained by the fact that 31% of the observed banks had an election in 2008. For those banks, 2009 represents the post-election year. Not observing this year therefore also increases the average lending in the year after the election as we have removed the low observations of these banks from 2009. 
+
+If you are wondering why the plot only changes for the election year and the year after, click: Info.
+#< info "a look at the other years"
+  - In 2007, elections were only held in Hamburg. This means that only for the six banks in Hamburg, 2009 is 2 years after the election. The exclusion of these 6 observations is not relevant for the overall average, which consists of almost 6000 observations for `ElecWhen`$=2$.
+  - The values for `ElecWhen`$=-1$ and `ElecWhen`$=-2$ remain unchanged because the years 2010 and 2011 are not in the sample period. For banks with an election in 2010, 2009 would be the pre-election year. However, since 2010 does not appear in our dataset, omitting 2009 does not drop out any observations for that year. The same applies for 2011.
+
+#>
+ 
+Initially, it is surprising that omitting the year 2009 leads to hardly any change in the graph of savings banks. Some kind of peak in election year lending would have been nice to see there. One reason for this could be that savings banks did not adjust their lending downward as much as cooperative banks during the financial crisis. This is consistent with the above plots of states 5, 7 and 8, where SB lending declined in 2009, but not to below-average levels compared to the other years in the sample period. The fact that SB lending was well above average in 2008 in those three states contributes to this. In contrast, CB lending for all four shown states dropped to all-time lows in 2009.
+
+It is also possible that an election in 2009 weakened the decline in savings bank lending, and thus omitting 2009 does not have as large an effect on `plot1`. To examine this, let us look at how lending of banks with and without an election declined from 2008 to 2009, for both CBs and SBs.
+
+To do this, we first create a table `deltadat` that contains the change in `BankLoans_Norm_LOG` from 2008 to 2009 for each bank. In addition, we store the banks' type as well as the information whether the bank is located in a state where elections were held in 2009. Press `check`.
+```{r "5_4"}
+#< task_notest
+deltadat <- dat %>%
+  group_by(BankID) %>%
+  summarise(Delta=BankLoans_Norm_LOG[Year==2009]-BankLoans_Norm_LOG[Year==2008], BankType=BankType[Year==2009], Elecin2009=Elec[Year==2009])
+
+head(deltadat)
+#>
+```
+The variable `Delta` captures the change in lending from 2008 to 2009. `Elecin2009` indicates whether the bank was located in a state with elections in 2009.
+
+Now, we can calculate the average of `Delta` for each combination of `BankType` and `Elecin2009`.
+```{r "5_4"}
+#< task_notest
+deltadat %>%
+  group_by(BankType,Elecin2009)%>%
+  summarise(meanDelta=mean(Delta, na.rm = TRUE))
+#>
+```
+
+Let us have a look at the cooperative banks first. From 2008 to 2009, the variable `BankLoans_Norm_LOG` dropped by an average of 0.0652 for banks without an election in 2009. For banks with an election in 2009, the variable fell by 0.0646. Like before, these values can also be viewed as percentage changes in normalized lending. This value decreased by around 6.5% from 2008 to 2009 in both cases. Thus, whether or not an election took place in 2009 does not seem to make much difference in the decline in cooperative bank lending.
+
+The decline for savings banks was lower. For banks without an election in 2009, lending in 2009 fell by an average of 0.0531 compared to the previous year. For banks with an election in 2009, this value is noticeably lower at 0.0450. Once again, these figures can be interpreted as a decline in normalized lending of 5.3% and 4.5%. So savings banks in an election year generally did not reduce their lending as much as savings banks outside an election year. One possible explanation is that politicians did not want to restrict lending even more in order not to further worsen the sentiment in their county and thus their re-election chances.
+
+Basically, we are once again running a Difference in Differences analysis here. For cooperative banks the decline in lending from 2008 to 2009 was almost the same for banks with and without an election in 2009. For savings banks, on the other hand, the decline in lending is noticeably smaller for banks with an election in 2009 than for banks without an election in that year. Once again, this suggests that elections have a positive impact on SB lending. 
+
+#< info "DiD estimation"
+  The DiD estimator in this case has a value of:
+  $$DID=(-0.0449736-(-0.05311233))-(-0.06458079-(-0.06517799))=0.00754153$$
+  Thus, the 2009 election has a positive causal effect on the change in lending from 2008 to 2009 by savings banks of around $0.008$.
+#>
+
+### Conclusion
+In summary, the low average CB lending in the year of the election and the year after can be explained by the fact that lending fell dramatically in 2009 (presumably triggered by the financial crisis). In addition, an above-average number of banks were located in states with an election in 2008 and 2009. We also found out that savings banks did not reduce their lending as much as cooperative banks, especially when an election was held in 2009.
+
+A possible skewness triggered by the financial crisis can be taken into account in a regression by adding fixed effects of the variable `Year` (more on this later). For this reason, this problem is not taken into account hereafter.
+
+## Exercise 3 -- DiD via linear Regression
+We already estimated the causal effect of elections on savings bank lending using the DiD approach. We used mean values of four different subsets and the corresponding formula to calculate the DiD estimator. A much more common method for the estimation of causal effects with DiD is the linear regression. In chapter 3.1, the example from 2.2 is performed again, but this time using linear regression. Section 3.2 develops this regression further. For example, fixed effects and several control variables are added to the regression. The goal is to end up with the complete regression that answers the main hypothesis of the paper.
+
+### Advantages of estimating causal effects via linear regression
+First, linear regression gives us the opportunity to control for other variables. In our existing calculation of the DiD estimator, lending depends only on the bank's type and whether or not an election is held. Certainly, however, there are other parameters influencing a bank's lending, such as trends over time or economic factors. When calculating causal effects via linear regression, such effects can easily be taken into account, in contrast to the calculation method shown in 2.1 and 2.2.
+
+Another reason for the calculation via linear regression is that the standard errors of the coefficients of the regression can be conveniently estimated. Based on this, we also obtain the significance levels of the coefficients. This enables us to assess whether the influence of an independent variable on the dependent variable is significant.
+
+## Exercise 3.1 -- Basic specification
+Press `edit` and then `check` to load the required dataset.
+```{r "7_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+This chapter deals with the calculation of the causal effect of county elections on savings bank lending via linear regression. We fit the regression with the method of ordinary least squares (OLS). This thesis does not include an introduction to linear regression and OLS. For information on these topics, see Hackl, 2013, p.30 ff. and Hackl, 2013, p.48 ff.
+
+Before we work through the example from 2.2 using a regression, let us first consider which variables are needed for this in the first place. In addition to the variable `SB`, which indicates the bank type, we need the variables `Elec` as the indicator of county elections and the variable `BankLoans_Norm_LOG` as the measure of lending. But which of those variables is our Y Value?
+
+#< quiz "variables"
+question: Which of the variables is the dependent variable (Y-Value)?
+sc:
+    - SB
+    - Elec
+    - BankLoans_Norm_LOG*
+success: Thats true.
+failure: Try again.
+
+#>
+
+To determine the effect of elections on lending, we regress `Elec` and `SB` on the dependent variable `BankLoans_Norm_LOG`. `Elec` and `SB` are therefore independent variables (X-Values)
+
+Let us now take a look at the basic formula of a DiD regression.
+$$y_{it}=\beta_{0} + \beta_{1}T_{t} + \beta_{2}D_{i} + \beta_{3}(T_{t} \times D_{i}) + \varepsilon_{it}$$
+with:
+  - $i$ indicates the individual
+  - $t$ indicates the time
+  - $y_{it}$ is the explained variable
+  - $T_{t}$ is a dummy variable that is $0$ in the period without treatment and $1$ in the treatment period
+  - $D_{i}$ is a dummy variable that is $0$ for individuals in the control group and $1$ for individuals in the treatment group
+  - $T_{t} \times D_{i}$ is the interaction term of $T_{t}$ and $D_{i}$
+  - $\varepsilon_{it}$ is an error term
+  
+Note: $T$ usually depends only on $t$, since each individual typically receives the treatment at the same time. Since in our case the time of the treatment (election) also depends on the state, $T$ depends on both the time and the individual bank.
+
+So, applied to our example, we get the following regression:
+$$BankLoansNormLOG_{it}=\beta_{0} + \beta_{1}Elec_{it} + \beta_{2}SB_{i} + \beta_{3}(Elec_{it} \times SB_{i}) + \varepsilon_{it}$$
+We are mainly interested in the coefficient $\beta_3$ because it measures the treatment effect of elections on savings bank lending. We will perform all regressions using the command `felm`. A detailed explanation of `felm` can be found in the Infobox.
+
+#< info "felm"
+The command `felm` from the `lfe` package can be used to estimate linear models. We can perform simple linear regressions with `felm` in the same way as with `lm`.  For example, we can regress the independent variable `Elec` on the dependent variable `BankLoans_Norm_LOG` with the following command:
+```{r eval=FALSE}
+felm(BankLoans_Norm_LOG ~ Elec, data  = dat)
+``` 
+For simple linear regressions like this, using `lm` would be more appropriate. However, the `felm` command can be easily extended using vertical dashes `|`. This allows us to include fixed effects, instrumental variables and cluster robust standard errors in the regression. We are not dealing with instrumental variables in this thesis. The other two aspects will be addressed in exercise 3.2.
+
+We can integrate them into the regression as follows:
+```{r eval=FALSE}
+
+felm(y ~ x1 + x2 | factors (fixed effects) | IV | cluster variable(s), data)
+``` 
+If certain parts of the formula are not used, you should replace them with the argument `0`. This is not necessary if those parts are at the end of the formula. In that case you can simply omit them. 
+
+You can find addidional information <a href="https://www.rdocumentation.org/packages/lfe/versions/2.8-7/topics/felm" target="_blank">here</a> or by running the command `?felm` in your R console.
+#>
+
+#< info "Interaction in R"
+To regress only the interaction of variables, separate them with `:`.
+
+To regress the interaction of variables as well as the variables themselves, separate them with `*`.
+
+Therefore, you can run the regression $y=\beta_0+\beta_1x_1+\beta_2x_2+\beta_3(x_1\times{x_2})$ in these two ways:
+```{r eval=FALSE}
+#option 1
+felm(y ~ x1 + x2 + x1:x2 )
+
+#option 2
+felm(y ~ x1*x2 )
+```
+Both options lead to the correct result in the next task.
+#>
+
+**Task:** Regress the variables `Elec` and `SB` as well as the interaction between the two variables on `BankLoans_Norm_LOG.` Use the dataset `dat` and the command `felm()`. Save the result in `est`.
+
+```{r "7_e"}
+est <- felm(BankLoans_Norm_LOG ~ Elec + SB + Elec:SB, data = dat)
+
+#< test_arg
+other.sols = list(quote(
+  est <- felm(BankLoans_Norm_LOG ~ Elec*SB, data = dat)
+))
+#>
+```
+
+Let us have a look at the results. Press `check`.
+```{r "7_e_2",results='asis'}
+#< task_notest
+stargazer(est,
+          type="html",
+          digits=4,
+          omit.stat="ser",
+          model.numbers=FALSE)
+#>
+```
+Here we can see the values of the coefficients. The asterisks behind these values show that all four coefficients are significant at the 5% or the 1% level. The standard errors of the coefficients (more about this in 3.2) are the values in brackets.
+
+#< quiz "causal effect"
+question: The coefficient of which variable reflects the causal effect of county elections on savings bank lending?
+sc:
+    - Elec
+    - SB
+    - Elec:SB*
+success: Thats true. 
+failure: Try again.
+
+#>
+We are mainly interested in the coefficient of the interaction term `Elec:SB`. We obtain a positive causal effect of elections on savings bank lending of $0.0118$. Again, due to the logarithmization of the dependent variable, this can also be interpreted as a 1.2% increase in normalized lending. We have obtained the same value in 2.2. The coefficient is significant at the 5% level.
+
+### Interpretation of the other coefficients
+Let us now show how the other coefficients from `est` can be interpreted with the help of the following illustration. The illustration was already introduced in chapter 2.2.
+```{r "7_e_3",results='asis'}
+#< task_notest
+mdat <- dat %>%
+  filter(!is.na(Elec)) %>% 
+  group_by(BankType,Elec)%>%
+  summarise(mean=mean(BankLoans_Norm_LOG, na.rm = TRUE))
+
+ggplot(data=mdat, aes(x=Elec, y=mean, color=BankType))+ 
+  geom_point(size=2.5)+
+  labs(title = "DiD estimator", x = "Elec" , y = "Avg. Bank Loans (norm. & log.)")+
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  geom_segment(x=0, y=mdat$mean[1], xend=1, yend=mdat$mean[2], size=1.5, colour="#00BFC4")+
+  geom_segment(x=0, y=mdat$mean[3], xend=1, yend=mdat$mean[4], size=1.5, colour="#F8766D")+
+  geom_segment(x=0, y=mdat$mean[3], xend=1, yend=mdat$mean[3]-(mdat$mean[1]-mdat$mean[2]), size=1.2, colour="#F8766D", linetype="dashed")+
+  geom_point(x=1, y=mdat$mean[3]-(mdat$mean[1]-mdat$mean[2]), size=2.5, colour="#F8766D")+
+  geom_segment(x=1, y=mdat$mean[1], xend=1, yend=mdat$mean[2], size=1.2, arrow = arrow(length = unit(0.5, "cm")),lineend = "butt", linejoin = "mitre", colour="black")+
+  geom_segment(x=1, y=mdat$mean[3]-(mdat$mean[1]-mdat$mean[2]), xend=1, yend=mdat$mean[4], size=1.2, arrow = arrow(length = unit(0.5, "cm")),lineend = "butt", linejoin = "mitre", colour="black")+
+  geom_segment(x=0, y=mdat$mean[1], xend=0, yend=mdat$mean[3], size=1.2, arrow = arrow(length = unit(0.5, "cm")),lineend = "butt", linejoin = "mitre", colour="black")+
+  geom_segment(x=-0.1, y=-0.318, xend=0, yend=mdat$mean[1], size=0.7, colour="black")+
+  ylim(-0.4,-0.317)+
+  theme(plot.title = element_text(hjust = 0.5))+
+  scale_x_continuous(breaks = c(0,1), limits = c(-0.2,1.22))+
+  annotate("text", x = 1.06, y = -0.323, label = "widehat(beta[1])",parse = TRUE,size=5)+
+  annotate("text", x = 1.08, y = -0.39, label = "widehat(beta[3])",parse = TRUE,size=5)+
+  annotate("text", x = -0.07, y = -0.35, label = "widehat(beta[2])",parse = TRUE,size=5)+
+  annotate("text", x = -0.16, y = -0.318, label = "widehat(beta[0])",parse = TRUE,size=5)
+
+#>
+```
+#< quiz "Beta 0"
+question: What does the coefficient beta 0 measure?
+sc:
+    - the average lending of CBs
+    - the average lending of SBs
+    - the average lending of CBs in non-election years*
+    - the average lending of SBs in election years
+success: Thats true. 
+failure: Try again.
+
+#>
+
+$\hat\beta_{0}$ is the intercept of the regression and measures the average lending of cooperative banks in non-election years. The coefficient has the value $-0.3176$.
+
+#< quiz "Beta 1"
+question: What does the coefficient beta 1 measure?
+sc:
+    - the gap between non-election year lending and election year lending of CBs*
+    - the gap between non-election year lending and election year lending of SBs
+    - the gap in lending between CBs and SBs in election years    
+    - the gap in lending between CBs and SBs in non-election years
+success: Thats true. 
+failure: Try again.
+
+#>
+
+
+$\hat\beta_{1}$ is the coefficient of `Elec` and measures the difference between non-election year and election year lending of cooperative banks. The coefficient has the value $-0.0138$.
+
+#< quiz "Beta 2"
+question: What does the coefficient beta 2 measure?
+sc:
+    - the gap between non-election year lending and election year lending of CBs
+    - the gap between non-election year lending and election year lending of SBs
+    - the gap in lending between CBs and SBs in election years    
+    - the gap in lending between CBs and SBs in non-election years*
+success: Thats true. 
+failure: Try again.
+
+#>
+
+$\hat\beta_{2}$ is the coefficient of `SB` and measures the difference in lending between CBs and SBs in non-election years. It has a value of $-0.0644$.
+
+
+With this regression, we can estimate four different scenarios:
+  - Our prediction of a cooperative bank's lending outside an election year is equal to $\hat{\beta}_{0}$.
+  - Our prediction of a cooperative bank's lending in an election year is equal to $\hat{\beta}_{0}+\hat{\beta}_{1}$.
+  - We predict a savings bank's lending outside an election year by $\hat{\beta}_{0}+\hat{\beta}_{2}$.
+  - Last but not least, a savings bank's lending in an election year can be predicted by $\hat{\beta}_{0}+\hat{\beta}_{1}+\hat{\beta}_{2}+\hat{\beta}_{3}$.
+
+We observe slightly lower SB lending in election years than in non-election years, although the causal effect of elections on SB lending is actually positive. This can also be seen in the fact that $\hat{\beta}_{1}+\hat{\beta}_{3}=-0.0138+0.0118=-0.002$ is negative in this simplified model. 
+
+### Conclusion
+This very simplified regression shows a significant positive causal effect of county elections on savings bank lending. The estimated coefficient of this effect is 0.011847 or just under 1.2%. It goes without saying that these figures should be treated with caution, as the regression is still very simplified. As I said, I think it is questionable whether the parallel trend assumption applies here. Moreover, I think the result of this regression is strongly influenced by the financial crisis (especially $\hat{\beta}_{1}$). For more reliable conclusions about the influence of elections, additional variables are added to the regression in the next chapter.
+
+## Exercise 3.2 -- Adding control variables
+
+Press `edit` and then `check` to load the required dataset.
+```{r "8_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+In this chapter we will extend the simple regression from the previous chapter step by step. The goal is to end up with a complete regression that answers the main hypothesis of the paper. First, year and state fixed effects are included in the regression. Thereafter, a set of control variables for banks and counties is added. The authors' goal is to increase the predictability of `BankLoans_Norm_LOG` by adding these variables. Moreover, they thereby reduce the risk of omitted variable bias, which occurs when a variable that is correlated with the dependent variable (as well as with an explanatory variable) is omitted from the regression. The last step is to cluster the standard errors.
+
+### Fixed effects
+Let us start by including fixed effects to the regression. The authors include year fixed effects to account for any national trends or annual shocks such as the financial crisis. You can think of it as adding a dummy variable to the regression for every year in the dataset. This way, we account for the unobserved effect that is constant across entities but varies over time (cf. Stock & Watson, 2015, p.409). 
+
+To control for differences in lending across states, the authors include state fixed effects. Again, you can think of this as adding dummy variables to the regression for every state in the dataset. We thereby account for the unobserved effect that is constant over time but varies across states (cf. Stock & Watson, 2015, p.409). 
+
+The formula of the regression with fixed effects looks as follows:
+$$BankLoansNormLOG_{it}=\beta_{1}Elec_{it} + \beta_{2}SB_{i} + \beta_{3}(Elec_{it} \times SB_{i}) + (Y_{t}, S_{i})\delta +  \varepsilon_{it}$$
+with: 
+  - $Y_{t}$ being a factor variable for the `Year` with 23 diffferent levels. This is equivalent to 23 different dummy variables, one for each year. Year fixed effects depend only on time $t$.
+  - $S_{i}$ being a factor variable for the `StateID` with 14 different levels. This is equivalent to 14 different state dummies. State fixed effects are constant over time and therefore depend only on the state (determined by the individual bank $i$). 
+  - Important: If we added all 37 dummy variables to the regression, this would result in perfect multicollinearity. One variable would be an exact linear combination of the other independent variables (cf. Wooldridge, 2016, p.74). For example, the dummy variable for state $1$ would be the following linear combination of other independent variables: $State_1=\underbrace{Year_1+...+Year_{23}}_{=1}-State_2-...-State_{14}$. This violates the basic assumption of "no perfect collinearity" and the model cannot be estimated via OLS (Assumption MLR.3 in Wooldrige, 2016, p.74). For this reason, we omit one Year- or State-level (one dummy variable) from the regression. This level serves as the reference level. The `felm` command does this automatically.
+  - $\delta$ is the vector of coefficients of the fixed effects. The interpretation of these values is not straightforward for year fixed effects. This is due to the fact that the DiD approach also aims to account for the development over time. The development over time is therefore taken into account twice.
+  
+Note that the intercept $\beta_0$ disappeared from the regression formula. The intercept is now part of the fixed effects. We could also keep the intercept. Then we would have to omit a total of two dummy variables to avoid multicollinarity. A state dummy and a year dummy.
+
+**Task:** Take the basic regression from 3.1 and add the fixed effects `StateID` and `Year` using command `felm()`. Save the result in variable `estFE`. Fill in the blanks.
+```{r "8_a"}
+#< fill_in
+# ___ <- felm(BankLoans_Norm_LOG~Elec*SB| ___ , data = dat, keepX=TRUE)
+#>
+estFE <- felm(BankLoans_Norm_LOG~Elec*SB| StateID + Year , data = dat, keepX=TRUE)
+```
+
+Let us compare the results of the regression with fixed effects with the results of the basic regression from chapter 2.4.
+```{r "8_a 2",results='asis'}
+#< task_notest
+est <- felm(BankLoans_Norm_LOG ~ Elec*SB , data = dat, keepX=TRUE)
+stargazer(est, estFE,
+          type="html",
+          digits=4,
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>old regression", "<pre>regression with FE"))
+#>
+```
+We can see that the negative influence of elections on bank lending has already decreased noticeably compared to the basic regression. While $\hat{\beta}_{1}$ in the previous regression had the value $-0.0138$, it is at $-0.0057$ now, even though this value is no longer significant. The coefficient of `Elec:SB` $\hat{\beta}_{3}$, which is the most important for us, has increased slightly and remains significant at the 5% level. The coefficient of the intercept has disappeared from the regression and instead shows up as part of the fixed effects.
+
+
+### Additional control variables
+In the next task, two bank-specific metrics, total assets and equity ratio, are added. The two metrics are represented in our dataset by the variables `BankTotAss_LOG_QRT` and `LAG_BankCapRat_LOG_QRT`. We do not use the absolute values of the metrics. Instead, they are logarithmized and then the quantiles are formed. This causes the variables to take only the values $1, 2, 3$ and $4$. The authors believe that the two variables affect lending and that their addition improves the regression.
+In both cases, the variables represent the value lagged by one year; for example in 2001, the actual value from 2000 is used. By doing so, the authors aim to reduce the risk of endogeneity. Endogeneity could occur if the control variables are also affected by the electoral cycle.
+
+
+**Task:** Let us now take the previous regression and add the two variables `LAG_BankTotAss_LOG_QRT` and `LAG_BankCapRat_LOG_QRT` as explanatory vaiables.
+```{r "8_b"}
+#< fill_in
+# estBM <- felm(BankLoans_Norm_LOG~Elec*SB + ___ | StateID+Year , data = dat, keepX=TRUE)
+# summary(estBM)
+#>
+estBM <- felm(BankLoans_Norm_LOG~Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT| StateID+Year , data = dat, keepX=TRUE)
+summary(estBM)
+```
+The regression finds a positive relationship between capital ratio and lending and a negative one between total assets and lending - both significant on the 0.1% level.
+
+### More control variables
+Let us now proceed in the same way and add four county-specific variables to the regression. 
+More specifically, we add the variables for population size, real GDP, and growth rates for those two variables. In the dataset, we find these metrics by the variable names `LAG_DistrGDP_LOG_QRT`, `LAG_DistrPop_LOG_QRT`, `LAG_DistrGDP_Gr_QRT`, and `LAG_DistrPop_Gr_QRT`. The first two are again logarithmized, the growth rate variables are not. Like before, all variables are delayed by one year and no absolute values are used, only their quantiles.
+
+**Task:** Take the regression from above and add the four county-specific metrics `LAG_DistrGDP_LOG_QRT`, `LAG_DistrPop_LOG_QRT`, `LAG_DistrGDP_Gr_QRT` and `LAG_DistrPop_Gr_QRT` as independent variables.
+```{r "8_c"}
+#< fill_in
+# estCM <- felm(BankLoans_Norm_LOG~Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + ___ | StateID+Year , data = dat, keepX=TRUE)
+# summary(estCM)
+#>
+estCM <- felm(BankLoans_Norm_LOG~Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID+Year , data = dat, keepX=TRUE)
+summary(estCM)
+```
+All four variables have a positive effect on lending and are significant except for the GDP growth rate. More importantly, by adding the covariates, the coefficient of `Elec:SB` increased to just under 0.015 and remained significant at the 5% level.
+
+Combining the two bank controls and the four county controls into vector $C_{it}$ with the corresponding $6\times1$ vector of coefficients $\lambda$ leads to the following final regression formula: $$BankLoansNormLOG_{it}=\beta_{1}Elec_{it} + \beta_{2}SB_{i} + \beta_{3}(Elec_{it} \times SB_{i}) + (Y_{t}, S_{i})\delta + C_{it}\lambda +  \varepsilon_{it}$$
+
+### Standard errors
+The final operation performed in this chapter is the clustering of standard errors. If you are interested in the mathematical background to standard errors and cluster robust standart errors, check out the infobox below. There, we first discuss how standard errors are estimated in the general case and then address clustered standard errors.
+
+#< info "standard errors and clustered standard errors"
+Given a regression in the form of:  $y=X\beta+\varepsilon$
+
+The **standard error of the regression** $\hat\sigma$ measures the accuracy of the regression and can be estimated using the following formula:
+$$\hat\sigma=\sqrt{\frac{\sum_{i=1}^n \hat\varepsilon_i^2}{df}}$$
+with $\hat\varepsilon_i$ being the residuals of the regression and $df$ being the degrees of freedom (# of observations - # of estimated parameters). Have a look at Wooldridge, 2016, p.88 for more information.
+
+The **standard error of the coefficient** $\hat\beta_k$ indicates how accurate an estimator is. The variance of $\hat\beta$ is determined as follows:
+$$Var(\hat\beta)=E(\hat\beta-E(\hat\beta))^2=(X^TX)^{-1}X^T\sigma^2IX(X^TX)^{-1}=\sigma^2(X^TX)^{-1}$$
+The standard error of $\hat\beta_k$ is the square root of the kth diagonal element of this matrix (cf. Green, 2018, p.102). From this follows:
+$$\widehat{SE}(\hat\beta_k)=\sqrt{[\hat\sigma^2(\mathbf{X}^T\mathbf{X})^{-1}]_{kk}}$$
+
+To obtain the correct standard errors of the coefficients with this formula, the Gauss-Markov assumptions must be satisfied. Therefore, the error terms of all observations have to be **homoscedastic** ($Var(\varepsilon_i)=\sigma^2<\infty~~\forall{i}$) and have to have an **expected value of zero** ($E(\varepsilon_i)=0~~\forall{i}$). Furthermore, the error terms of different observations have to be **uncorrelated** ($Cov(\varepsilon_i,\varepsilon_j)=0~~\forall{i\neq{j}}$). In reality, however, the error terms of different observations are often correlated in some way, resulting in a biased standard error.
+
+### Cluster robust standard errors
+The authors suggest that this may be the case for banks located in the same region. If shocks occur at the regional level, for example due to the regional business cycle, there is a high probability that error terms of banks in the same geographic area are correlated. For this reason, the authors estimate **cluster robust standard errors**. That is, they assume that error terms of different observations within the same cluster are correlated. Error terms of different clusters, however, are still assumed to be uncorrelated (cf. Nichols, et. al., 2007, p.2). Cluster robust standard errors can be estimated as follows:
+
+### Mathematical formula
+Let us assume the sample consists of $C$ clusters labeled $c=1,...,C$. Each cluster consists of $N_c$ observations with $\sum_{c=1}^C{N_c}=n$. The regression is modeled as: $y_c=X_c\beta+\varepsilon_c$ 
+ 
+Then, the variance of $\beta$ is given by:
+$$\widehat{Var}(\hat\beta)=(X^TX)^{-1} \mathbf{\sum_{c=1}^C(X_c^T\hat\varepsilon_c\hat\varepsilon_c^TX_c)}(X^TX)^{-1}$$
+where $X_c$ is the $N_c\times{K}$ matrix of independent variables of cluster c and $\hat\varepsilon_c$ is the $N_c\times{1}$ vector of residuals of c (cf. Green, 2018, p.115).
+
+Due to the finite number of clusters, the estimated value of the standard error is biased downward (cf. Cameron & Miller, 2015, p.324 f.). To reduce this bias, the formula can be adjusted as follows:
+ $$\widehat{Var}(\hat\beta)=(X^TX)^{-1} (\frac{C}{C-1}\frac{n-1}{n-k}  \sum_{c=1}^CX_c^T\hat\varepsilon_c\hat\varepsilon_c^TX_c)(X^TX)^{-1}$$
+ Standard errors in our regressions are estimated with this formula.
+#>
+
+This thesis clusters standard errors in all subsequent regressions at state level. So, to obtain unbiased estimates of the standard errors, error terms within a state can be correlated, whereas error terms of different states cannot. In R, clustering the standard errors is straightforward. You just need to insert the desired variable to cluster by in the last position of the `felm` regression command.
+
+**Task:** Take the regression from above and add the `StateID` as a cluster for standard errors.
+```{r "8_d"}
+#< fill_in
+# estSE <- felm(BankLoans_Norm_LOG~Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID+Year | 0 | ___ , data = dat, keepX=TRUE)
+#>
+estSE <- felm(BankLoans_Norm_LOG~Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data = dat, keepX=TRUE)
+```
+
+Let us look at the results of the regression with clustered standard errors and compare them to the previous regression.
+```{r "8_d 2",results='asis'}
+#< task_notest
+stargazer(estCM, estSE,
+          type="html",
+          digits=4,
+          keep = c("Elec", "SB", "Elec:SB"),
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>no clustered SE", "<pre>with clustered SE"))
+#>
+```
+We see that the standard errors of the coefficients have changed. The standard error of the coefficient for `Elec:SB` decreases from $0.0062$ to $0.0044$. The value of the coefficient itself and the values of all other coefficients remain unchanged. This results in the coefficient of the DiD estimator now being significant at the 1% level. Thus, we obtain a positive causal effect of county elections on savings bank lending of 0.015 or 1.5%.
+
+Note: Since there are only 14 different states in our dataset, only 14 clusters are used. The number of clusters is therefore well below the recommended number in the literature. Although there is no distinct minimum number of clusters in general, the threshold in Angrist and Pischke (2008), for example, is set at 42. Englmaier and Stowasser address this in the context of a robustness check, which is not further elaborated in this thesis. You can find it in section 7.3 of the paper.
+
+Our result differs slightly from the one in the paper. If you want to know why this is the case, take a look at the infobox.
+
+#< info "Deviation of the results"
+For the regression, the authors generated the variable `ElecCOUxSB` that should describe the interaction of `Elec` and `SB`. So their regression formula looked like this: `BankLoans_Norm_LOG` ~ `Elec` + `SB` + `ElecCOUxSB` + ...
+
+However, as I confirmed with the original authors an error occurred in the data encoding of `ElecCOUxSB` for the "Freie Sparkassen". As a reminder: these banks are called savings banks, but for our analyses they are to be treated in the same way as cooperative banks (`SB` equals $0$). Yet `ElecCOUxSB` takes the value $1$ in election years for these banks, although it should always be 0. A total of 49 observations are affected. Since we use the interaction `Elec`*`SB` instead, our result is slightly different from the one in the paper and more precise.
+#>
+
+## Exercise 4 -- Additional analysis
+
+In the course of this problem set, we have already found out that county elections have a positive impact on savings bank lending in an election year. However, this is not the only finding from Englmaier and Stowasser's work. They ran lots of regressions to address various questions. Part of it is covered in more detail in this chapter.
+
+First, chapter 4.1 examines the impact of elections on savings bank lending in other years of the electoral cycle. The goal is to address questions such as: "When do banks start increasing lending?" and "Does lending drop again after the election to compensate for excessive lending before the election?". The authors also examined the role of electoral competition - always referring, of course, to the influence of elections on lending. In section 4.2, we briefly summarize the results of this analysis. Finally, we will examine the loan default rates throughout the election cycle. Savings bank lending in election years is higher than usual. Does this also lead to an increase in the loan default rate after elections? We will discuss this question and its underlying background in chapter 4.3.
+
+
+## Exercise 4.1 -- Lending throughout the election cycle
+
+In this chapter, the complete regression from chapter 3 is reshaped in such a way that the remaining years of the electoral cycle can be examined. As previously addressed, we do not know when savings banks would begin to systematically increase lending. Especially when there is an election in spring, an increase in lending that does not occur until early in the election year would likely have little effect on the outcome of the election. Hence, the authors suspect that the systematic increase in lending, at least partially, is already taking place in the pre-election year. From this perspective, there should also be a positive effect of elections on pre-election year lending. In addition, the years after the election are analyzed to see if lending declines in those years. One reason for this could be that banks compensate for increased lending in the election year by decreasing lending after the election.
+
+Let us start by loading our dataset. Press `edit` and then `check`.
+```{r "10_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+Let us now examine the impact of elections on lending in the years before and after an election. More specifically, we will analyze the pre-election year as well as the three years after the election. For each of these years, we will run a separate regression. What do you think are the variables that we need to adjust from our previous regression to achieve this?
+
+#< quiz "adjustment"
+question: We now want to examine a year other than the election year. Which variables need to be adjusted?
+sc:
+    - the explained variable (BankLoans_Norm_LOG)
+    - only Elec*
+    - both Elec and SB
+    - all explaining variables
+success: That is correct, we just need to adjust the explanatory variable Elec to examine a year other than the election year.
+failure: Try again.
+#>
+
+Accordingly, we use almost the same regression as before:
+$$BankLoansNormLOG_{it}=\beta_{1}Elec_{it-\tau} + \beta_{2}SB_{i} + \beta_{3}(Elec_{it-\tau} \times SB_{i}) + (Y_{t}, S_{i})\delta + C_{it}\lambda +  \varepsilon_{it}$$
+with $\tau=(-1,1,2,3)$. For example, if $\tau$ is equal to $-1$, then the election indicator is equal to $1$ if there was an election the next year. This way, we obtain the causal effect of pre-election years on lending, or in other words, the effect of elections on lending in the previous year. Likewise, for $\tau = (1,2,3)$, we examine the effect of elections on lending 1, 2, and 3 years after the election.
+
+We now want to create the election indicator for $\tau=1$. $Elec_{it-1}$ should therefore be equal to $1$ whenever an election has taken place in the previous year. Before creating such a variable, let us have another look at `Elec`.
+```{r "10_b"}
+#< task_notest
+select(dat, BankID,Year,Elec)
+#>
+```
+In order to be able to analyze the year after the election year, we have to create a variable `PostElec`, in which the years of the elections are delayed by 1 year. If a value of this variable in a year is $1$, we know that an election took place in the previous year. However, if we simply move the entire column down by one row, one bank's entry for $2009$ becomes the next bank's entry for $1987$. For this reason, the function `group_by()` has to be used in the `dplyr` code to group by `BankID`.
+
+**Task:** Create the column `PostElec`. Use the command `lag()` to delay the column `Elec` by one year. Fill in the blanks.
+```{r "10_b_2"}
+#< fill_in
+# dat <- dat %>% 
+#   group_by(___) %>% 
+#   mutate(___)
+# select(dat, BankID,Year,Elec,PostElec)
+#>
+dat <- dat %>% 
+  group_by(BankID) %>% 
+  mutate(PostElec = lag(Elec))
+select(dat, BankID,Year,Elec,PostElec)
+```
+Now, the variable `PostElec` can be used in the regression to estimate the causal effect of elections on post-election year lending.
+ 
+The other three required variables for $\tau=(-1,2,3)$ have already been generated. Let us take a look at them.
+```{r "10_b_3"}
+#< task_notest
+select(dat, BankID,Year,PreElec,Elec,PostElec,PostElec2,PostElec3)
+#>
+```
+Looking at the table, two things are noticeable: 
+  - By leading and lagging the variable `Elec` a few observations get lost. This is because we are not aware of any observations beyond the observed interval.
+  - Bank 1 has an electoral cycle of 6 years. However, there are states where an election is held every 4 years. In these states, the variables `PreElec` and `PostElec3` are identical (besides the NA's). Thus, the observations for these years are used to examine both the pre-election year and the period of 3 years after the election. This is also the reason why we only examine five years. Adding another year, such as the year two years before an election, would result in an even greater overlap of years.
+
+With the necessary variables available, we can now run the regressions for the year before an election and for 1, 2, and 3 years after an election.
+
+Let us start with the year before an election. Adjust the given regression analyzing the election year in a way that it represents the pre-election year. The required election-indicator for this is `PreElec`.
+```{r "10_c"}
+#< fill_in
+# #Modify the regression in such a way that it maps the pre-election year
+# est_lead <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+#>
+#Modify the regression in such a way that it maps the pre-election year
+est_lead <- felm(BankLoans_Norm_LOG ~ PreElec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+
+```
+
+Let us repeat this modification for the post-election year. Use the variable `PostElec`.
+```{r "10_c 2"}
+#< fill_in
+# #Modify the regression in such a way that it maps the post-election year
+# est_lag1 <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+#>
+#Modify the regression in such a way that it maps the post-election year
+est_lag1 <- felm(BankLoans_Norm_LOG ~ PostElec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+
+```
+
+The regressions for the other years of the electoral cycle are already given. Just press `check`.
+```{r "10_c 3"}
+#< task_notest
+#2 years after an election
+est_lag2 <- felm(BankLoans_Norm_LOG ~ PostElec2*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+
+#3years after an election
+est_lag3 <- felm(BankLoans_Norm_LOG ~ PostElec3*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = dat, keepX=TRUE)
+
+#election year, same code as in 3.2
+est <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data = dat, keepX=TRUE)
+#>
+```
+
+Now let us take a look at the results.
+```{r "10_c 4",results='asis'}
+#< task_notest
+#modifying the row names of the coefficients, for better stargazer output
+rownames(est$coefficients)[9]<-'ElecT:SB'
+rownames(est$beta)[9]<-'ElecT:SB'
+rownames(est_lead$coefficients)[9]<-'ElecT:SB'
+rownames(est_lead$beta)[9]<-'ElecT:SB'
+rownames(est_lag1$coefficients)[9]<-'ElecT:SB'
+rownames(est_lag1$beta)[9]<-'ElecT:SB'
+rownames(est_lag2$coefficients)[9]<-'ElecT:SB'
+rownames(est_lag2$beta)[9]<-'ElecT:SB'
+rownames(est_lag3$coefficients)[9]<-'ElecT:SB'
+rownames(est_lag3$beta)[9]<-'ElecT:SB'
+
+stargazer(est_lead, est, est_lag1, est_lag2, est_lag3,
+          type="html",
+          digits=4,
+          keep = c("ElecT:SB"),
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>1 year ahead","<pre>election year", "<pre>1 year after", "<pre>2 years after", "<pre>3 years after"))
+
+
+#>
+```
+### Interpretation
+In addition to the already known results from the election year, we obtain significant results for the year before and the second year after the election. Both of these findings are significant at the 10% level. The result indicates that elections have a positive causal effect on savings bank lending in the pre-election year, with a coefficient of 0.0123. This means that, ceteris paribus, an election in the following year increases the savings bank's normalized lending in the current year by an average of 1.2%. A negative relationship between elections and savings bank lending is found for the second year after the election. A coefficient of -0.0154 means that our prediction for normalized lending is reduced by over 1.5% if the observed bank is a savings bank two years after an election. No significant results were found for the year after an election and the year three years after an election.
+
+### Conclusion
+The results of these regressions indicate that the increase in savings bank lending is likely to already start in the pre-election year. The assumption that lending declines again after the election can also be confirmed at the 10% level for the second year after the election. These conclusions are only accurate if all of our assumptions for the regressions are met.
+
+
+## Exercise 4.2 -- The role of electoral competition
+
+Press `edit` and then `check` to load the required dataset.
+
+```{r "11_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+In addition to the overall effect of elections on savings bank lending, the authors also examined the role that the contestedness of an election plays in this effect. Their idea is that politicians are more likely to increase savings bank lending when a close result is anticipated in the run-up to the election. If incumbents knew in advance that they were certain to win or lose the election, it would be unnecessary for them to increase lending. However, if a close election outcome is expected in advance, additional votes are more valuable because they could decide the outcome of the election. In this case, politicians have a higher incentive to increase savings bank lending.
+
+We will very briefly discuss the authors' findings in this chapter, as they also play a role in the next exercise.
+
+### A measure of contestedness
+There are usually no polls before county elections, as we know them from the run-up to federal elections.  Instead, we utilize the election result to assess whether an election was contested or not. If it was close, we assume that the election was also perceived as close in the run-up. The authors decide whether an election result is close or not based on the winning party's share of the vote and its margin of victory. This information about the closeness of an election is stored in the variable `ElecCloseIndex3_MED`. If the variable takes the value $1$, we consider the election to be contested. If the variable takes the value $0$, it is not contested.
+
+To test the causal effect of county elections on savings bank lending depending on the contestedness of the election, we now re-run the regression we set up in 3.2. We apply the regression once to the subset of contested elections and once to the subset of uncontested elections.
+
+Let us first apply the regression to the subset of contested elections. You can create such a subset with the command `filter()` (see Exercise 1). `ElecCloseIndex3_MED` indicates whether the election was contested ($1$) or not ($0$). Fill in the blank.
+```{r "11_a"}
+#< fill_in
+# #Contested election
+# estC <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = ___ , keepX=TRUE)
+#>
+#Contested election
+estC <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = filter(dat, ElecCloseIndex3_MED==1), keepX=TRUE)
+
+```
+
+The code for uncontested elections is already given. Press `check`.
+```{r "11_a"}
+#< task_notest
+#Uncontested election
+estUNC <- felm(BankLoans_Norm_LOG ~ Elec*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data = filter(dat, ElecCloseIndex3_MED==0), keepX=TRUE)
+#>
+```
+
+Lets now have a look at the results.
+```{r "11_a_2",results='asis'}
+#< task_notest
+stargazer(estC, estUNC,
+          type="html",
+          digits=4,
+          keep = c("Elec:SB"),
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>only contested ", "<pre>only uncontested "))
+#>
+```
+We obtain a causal effect of $0.030$ for contested elections, which is twice as large as the value we obtained for all elections combined ($0.015$) in exercise 3.2. As in 3.2, the coefficient is significant at the 1% level. Thus, we conclude that the causal effect of elections on savings bank lending is particularly present for contested elections. For uncontested elections, we even observe a slightly negative causal effect, although this effect is not significant.
+
+
+## Exercise 4.3 -- Default rates throughout the election cycle
+
+Press `edit` and then `check` to load the required dataset.
+```{r "12_1"}
+#< task_notest
+dat <- read.fst("dataset.fst")
+#>
+```
+
+Throughout this problem set, we have found that elections lead to increased lending  by savings banks compared to cooperative banks. Moreover, we know from the previous chapter that this effect is stronger for contested elections. In this exercise, we will examine whether the increase in lending in election years is also reflected in rising loan default rates in the subsequent years. A possible explanation for this thesis could be that, due to increased lending in election years, some loans were approved that would not have met the banks' profitability or default risk requirements under normal circumstances. As these loans do not necessarily default in the year in which they were granted, the authors expect a delayed increase in loan default rates after an election. We therefore study the impact of elections on loan defaults in the electoral cycle.
+
+The structure of the regression remains the same as in the previous regressions, except that we change the dependent variable to the normalized and logarithmized loan default rate `BankLoansBadNorm_LOG`. We obtain this variable by dividing the absolute value of loan defaults by the total amount of loans and logarithmizing this ratio. Another change to the original regression affects the indicator for elections. Instead of analyzing each year of the election cycle separately, we divide the four years after the election into two-year rolling averages. So the regression formula looks like this:
+
+$$D_{it}=\beta_{1}Elec_{it-\tau} + \beta_{2}SB_{i} + \beta_{3}(Elec_{it-\tau} \times SB_{i}) + (Y_{t}, S_{i})\mathbf{\delta} + C_{it}\lambda + \varepsilon_{it}$$
+with $D_{it}$ representing the dependent variable `BankLoansBadNorm_LOG` and $\tau$ consisting of the four year bundles: $(0,1), (1,2), (2,3)$ and $(3,4)$. For example, if we examine $\tau=(2,3)$, we want to obtain the causal effect of an election on the loan default rate two to three years after the election.
+
+The indicator variables required for this have already been generated. Let us have a look at them. Press `check`.
+```{r "12_d"}
+#< task_notest
+select(dat, Year, Elec, ElecPost01, ElecPost12, ElecPost23, ElecPost34)
+#>
+```
+For example, if the variable `ElecPost23` is equal to $1$ for an observation, we know that an election took place 2 or 3 years earlier. So we use this variable to examine the year bundle (2,3).
+ 
+Let us start with the regression for the first interval: the year bundle (0,1). Fill in the blank with the correct election indicator. 
+```{r "12_d_2"}
+#< fill_in
+# estDef01 <-felm(BankLoansBadNorm_LOG ~ ___*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data =dat, keepX=TRUE)
+#>
+estDef01 <-felm(BankLoansBadNorm_LOG ~ ElecPost01*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data =dat, keepX=TRUE)
+```
+The regressions for the other three year bundles work in the same way. We use the variables `ElecPost12`, `ElecPost23` and `ElecPost34` as election indicators. The code for the other three regressions is already given. Press `check`.
+```{r "12_d_3"}
+#< task_notest
+#tau=1/2
+estDef12 <- felm(BankLoansBadNorm_LOG ~ ElecPost12*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =dat, keepX=TRUE)
+#tau=2/3
+estDef23 <- felm(BankLoansBadNorm_LOG ~ ElecPost23*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =dat, keepX=TRUE)
+#tau=3/4
+estDef34 <- felm(BankLoansBadNorm_LOG ~ ElecPost34*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =dat, keepX=TRUE)
+#>
+```
+Let us now take a look at the results.
+```{r "12_d_4",results='asis'}
+#< task_notest
+rownames(estDef01$coefficients)[9]<-'ElecT:SB'
+rownames(estDef01$beta)[9]<-'ElecT:SB'
+rownames(estDef12$coefficients)[9]<-'ElecT:SB'
+rownames(estDef12$beta)[9]<-'ElecT:SB'
+rownames(estDef23$coefficients)[9]<-'ElecT:SB'
+rownames(estDef23$beta)[9]<-'ElecT:SB'
+rownames(estDef34$coefficients)[9]<-'ElecT:SB'
+rownames(estDef34$beta)[9]<-'ElecT:SB'
+
+stargazer(estDef01, estDef12, estDef23, estDef34,
+          keep = c("ElecT:SB"),
+          type="html",
+          digits=3,
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>0 and 1 year <br> after Election", "<pre>1 and 2  years <br> after Election","<pre>2 and 3 years <br> after Election","<pre>3 and 4 years <br> after Election"))
+
+#>
+```
+### Interpretation
+We obtain a significant result only for the year bundle (3,4). The regression result suggests that elections lead to an increase in the loan default rate of about 0.3% 3 to 4 years after an election. This effect is quite small and the coefficient is significant only at the 10% level.
+
+The entire data set likely contains many elections in which there was hardly any election-induced lending. The authors assume this to be the reason for the barely significant findings. For this reason, they subsequently examined only the elections in which they expected the greatest election-induced lending. The two authors expect particularly high election-induced lending for elections that meet the following two requirements: First, the election has to be contested. The findings from 4.2 suggest that the causal effect of elections on lending is indeed larger for close elections. In addition, the authors suggest that the level of incumbent entrenchment is also a contributing factor. They assume that while the contestedness of an election provides an incentive for the politician to increase credit, the ability to do so in the first place likely depends on political entrenchment in the county. The longer a party has been represented on the bank's board of directors and credit committee, the closer the relationship between politicians and bank managers is likely to be. As a result, it should be easier for the incumbent to influence the lending of the local savings bank if the party has been in power for some time.
+
+So let us now analyze the effect of elections on loan defaults, examining only contested elections with high incumbent entrenchment. As an indicator of contestedness we again use the variable `ElecCloseIndex3_MED`. As an indicator of incumbent entrenchment we use the variable `ElecIncTenure_MED_ALT`. The variable takes the value $1$ if the ruling party at the time of the election has been in power for 14 years or more and $0$ if this is not the case. Thus, only those observations are used for the regression for which both `ElecCloseIndex3_MED` and `ElecIncTenure_MED_ALT` take the value $1$.
+
+The regressions are identical to those from above, except that we filter the data set by `ElecCloseIndex3_MED` and `ElecIncTenure_MED_ALT`. The code for the regressions is already given. Press `check`.
+```{r "12_d_3"}
+#< task_notest
+#tau=0/1
+estCont01 <-felm(BankLoansBadNorm_LOG ~ ElecPost01*SB + LAG_BankTotAss_LOG_QRT + LAG_BankCapRat_LOG_QRT + LAG_DistrGDP_LOG_QRT + LAG_DistrPop_LOG_QRT + LAG_DistrGDP_Gr_QRT + LAG_DistrPop_Gr_QRT | StateID + Year | 0 | StateID, data =filter(dat, ElecCloseIndex3_MED==1 & ElecIncTenure_MED_ALT==1), keepX=TRUE)
+#tau=1/2
+estCont12 <- felm(BankLoansBadNorm_LOG ~ ElecPost12*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =filter(dat, ElecCloseIndex3_MED_lag1==1 & ElecIncTenure_MED_ALT_lag1==1), keepX=TRUE)
+#tau=2/3
+estCont23 <- felm(BankLoansBadNorm_LOG ~ ElecPost23*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =filter(dat, ElecCloseIndex3_MED_lag2==1 & ElecIncTenure_MED_ALT_lag2==1), keepX=TRUE)
+#tau=3/4
+estCont34 <- felm(BankLoansBadNorm_LOG ~ ElecPost34*SB+LAG_BankTotAss_LOG_QRT+LAG_BankCapRat_LOG_QRT+LAG_DistrGDP_LOG_QRT+LAG_DistrPop_LOG_QRT+LAG_DistrGDP_Gr_QRT+LAG_DistrPop_Gr_QRT | StateID+Year | 0 | StateID, data =filter(dat, ElecCloseIndex3_MED_lag3==1 & ElecIncTenure_MED_ALT_lag3==1), keepX=TRUE)
+#>
+```
+
+Let us now take a look at the results.
+```{r "12_d_4",results='asis'}
+#< task_notest
+rownames(estCont01$coefficients)[9]<-'ElecT:SB'
+rownames(estCont01$beta)[9]<-'ElecT:SB'
+rownames(estCont12$coefficients)[9]<-'ElecT:SB'
+rownames(estCont12$beta)[9]<-'ElecT:SB'
+rownames(estCont23$coefficients)[9]<-'ElecT:SB'
+rownames(estCont23$beta)[9]<-'ElecT:SB'
+rownames(estCont34$coefficients)[9]<-'ElecT:SB'
+rownames(estCont34$beta)[9]<-'ElecT:SB'
+
+stargazer(estCont01, estCont12, estCont23, estCont34,
+          keep = c("ElecT:SB"),
+          type="html",
+          digits=3,
+          omit.stat="ser",
+          model.numbers=FALSE,
+          column.labels=c("<pre>0 and 1 year <br> after Election", "<pre>1 and 2  years <br> after Election","<pre>2 and 3 years <br> after Election","<pre>3 and 4 years <br> after Election"))
+
+#>
+```
+We obtain significant results for all four year bundles. Accordingly, elections reduce the loan default rate by 0.6% in the election year and the year after. Moreover, elections reduce the loan default rate by 0.3% in years 1 and 2 after an election. The results for $\tau=(2,3)$ and $\tau=(3,4)$ confirm our hypothesis that loan default rates increase towards the end of the election cycle. In years 2 and 3 after an election, we observe that the loan default rate increases by 0.4%. In years 3 and 4, this figure is at 1%.
+
+So elections, for which we expect to see a lot of election-induced lending, have a much larger impact on the loan default rate than elections in general.
+
+The variable we used for the incumbent entrenchment `ElecIncTenure_MED_ALT` differs from the variable `ElecIncTenure_MED` used by the authors. You can find the difference between the two variables and the reason why we deviate from the specification made in the paper in the infobox.
+
+#< info "Modification of the variable ElecIncTenure_MED"
+### ElecIncTenure_MED
+Let us first take a look at the variable `ElecIncTenure_MED`, which the authors use. The variable is equal to 1 if the current ruling party has been in power for 14 years or more and 0 if not. What happens if the ruling party at the time of the election has been in power for more than 14 years and loses the election? Then the variable ElecIncTenure_MED takes the value 0 already in the election year and the observation would thus not be part of our calculation. However, the observation should actually be included in the specification (given the election is additionally contested), since the party responsible for the election-induced lending was already in power for more than 14 years.
+
+### ElecIncTenure_MED_ALT
+The basic structure of `ElecIncTenure_MED_ALT` is the same as that of `ElecIncTenure_MED`: it has the value 1 if the current ruling party has been in power for 14 years or more and 0 if not. For the scenario described above, in which the former ruling party had already been in power for 14 years and lost the election, the two variables differ. In this case, the variable `ElecIncTenure_MED_ALT` takes the value $1$ for the entire next election cycle. These observations are not excluded from the regression since the party responsible for the election-induced lending was already entrenched.
+
+For a better understanding, here is an example that illustrates the differences between the two variables.
+
+```
+   BankID  Year  Elec ElecPost01 ElecIncTenure ElecIncTenure_MED ElecIncTenure_MED_ALT
+ 1      1  1987     0          0            17                 1                     1
+ 2      1  1988     0          0            18                 1                     1
+ 3      1  1989     0          0            19                 1                     1
+ 4      1  1990     1          1             0                 0                     1
+ 5      1  1991     0          1             1                 0                     1
+ 6      1  1992     0          0             2                 0                     1
+ 7      1  1993     0          0             3                 0                     1
+ 8      1  1994     0          0             4                 0                     1
+ 9      1  1995     0          0             5                 0                     1
+10      1  1996     1          1             0                 0                     0
+11      1  1997     0          1             1                 0                     0
+12      1  1998     0          0             2                 0                     0
+```
+In the 1990 election year, the ruling party had already been in office for 20 years and was thus well entrenched. Therefore, `ElecIncTenure_MED_ALT` is equal to 1 for the entire subsequent election cycle, even though the election was lost.
+#>
+
+
+## Exercise 5 -- Conclusion 
+
+### Conclusion
+Let us briefly summarize the topics we covered in this interactive problem set. The goal was to find out whether German savings banks systematically adjust their lending to the local election cycle. 
+
+In exercise 1, we presented the data that we used in the problem set. It consists of 1214 cooperative banks and 521 savings banks observed over a period from 1987 to 2009. We introduced the variables that played major roles in our subsequent analyses. We focused on bank lending and its distribution and motivated the transformation from `BankLoans` to `BankLoans_Norm_LOG`.
+
+In Exercise 2, we introduced the underlying principle on which all of our subsequent analyses were based: the difference-in-differences approach. Savings banks represent the treatment group and are compared with cooperative banks which form the control group. County elections are the treatment. As a first example, we focused on the Bavarian banks and calculated the DiD estimator just for them. Throughout, we concluded that the assumption of parallel trends is probably not fulfilled. We then extended the example to all German banks. In the process, we made the surprising observation that lending by cooperative banks declined in election years. Since there are no obvious reasons for this, we took a closer look at the timing of the elections. We concluded that the high number of elections in 2009 coupled with the sharp drop in lending that year triggered the overall decline.
+
+In Exercise 3 we again focused on the DiD approach, yet we now calculated the causal effect of elections on savings bank lending via linear regression. First, we established the basic specification of the regression by reconstructing the simple example from Exercise 2.2. We then added fixed effects and a number of additional control variables to the regression. We hope that these variables partially explain the difference in lending behavior between SBs and CBs over time, thus weakening the assumption of parallel trends. We also clustered the standard errors on the state level. We obtained that the causal effect of county elections on SB lending is around 0.015, or 1.5%. This coefficient is significant at the 1% level. Thus, county elections have a positive impact on savings bank lending.
+
+Last but not least, we did some additional analysis in Exercise 4. First, we examined the impact of elections on lending in other years of the electorial cycle. We found out that elections have a positive causal effect on savings bank lending in the pre-election year. The effect on lending 2 years after the election is negative. We then examined the role of electoral competition. We found that the impact of elections on savings bank lending is about twice as large when only contested elections are sampled. Finally, we analyzed the impact of elections on savings banks' default rates. The results were significant when we considered only those elections for which we expected the largest election-induced lending. Accordingly, those elections lead to an increase in the loan default rate of about 1% 3 to 4 years after the election.
+
+So we found that savings banks indeed adjusted their lending to the local election cycle. 
+
+### Related literature
+There are numerous empirical studies that have also examined electoral cycles in Germany like this. Garmann (2017) analyzed election cycles in public administration decisions of German municipalities. For example, the author found that significantly more building permits are issued by the public administration in election years. Another paper that examines electoral cycles at the German municipal level is Krause (2019). The author examined communal fees and found that they increase at a below-average rate in election years and at an above-average rate directly after elections. Mechtel and Potrafke (2013) examined labor market policies before state elections in Germany. Governments can use Active Labor Market Policies (ALMP) in the form
+of job creation schemes to reduce the unemployment rate and thereby try to increase their popularity among the population. The authors found that this approach was particularly forced in election years. Therefore, the growth rate of workers enrolled in job creation schemes increased in election years by approximately 4 percentage points (cf. Mechtel & Potrafke, 2013, p.187).
+
+
+## Exercise References
+
+
+### Bibliography
+
+Abadie, A. (2005). "Semiparametric difference-in-differences estimators" The Review of Economic Studies, 72(1), 1-19.
+
+Andersson, J. J. (2019). "Carbon taxes and CO 2 emissions: Sweden as a case study" American Economic Journal: Economic Policy, 11(4), 1-30.
+
+Angrist, J. D., & Pischke, J. S. (2008). "Mostly harmless econometrics" Princeton university press.
+
+Blake, T., Nosko, C., & Tadelis, S. (2015). "Consumer heterogeneity and paid search effectiveness: A large-scale field experiment" Econometrica, 83(1), 155-174.
+
+Cameron, A. C., & Miller, D. L. (2015). "A practitioner's guide to cluster-robust inference" Journal of human resources, 50(2), 317-372.
+
+Card, D., & Krueger, A. (1994). "Minimum Wages and Employment: A Case Study of the Fast-Food Industry in New Jersey and Pennsylvania" The American Economic Review, 84(4), 772-793.
+
+Englmaier, F., & Stowasser, T. (2017). "Electoral cycles in savings bank lending" Journal of the European Economic Association, 15(2), 296-354.
+
+Garmann, S. (2017). "Electoral cycles in public administration decisions: Evidence from German municipalities" Regional Studies, 51(5), 712-723.
+
+Greene, W. H. (2018). "Econometric analysis" (8th ed.) Pearson.
+
+Hackl, P. (2013). "Einf&uuml;hrung in die &Ouml;konometrie" (2nd ed.) Pearson.
+
+Krause, M. (2019). "Communal fees and election cycles: Evidence from German municipalities"  ifo Working Paper No. 293.
+
+Lechner, M. (2011). "The Estimation of Causal Effects by Difference-in-Difference Methods" Foundations and Trends in Econometrics, 4(3), 165-224.
+
+Mechtel, M., & Potrafke, N. (2013). "Electoral cycles in active labor market policies" Public Choice, 156(1-2), 181-194.
+
+Nichols, A., & Schaffer, M. (2007). "Clustered errors in Stata" United Kingdom Stata Users' Group Meeting.
+
+Sparkassengesetz Baden-W&uuml;rttemberg (2005). https://dejure.org/gesetze/SpG, accessed on 18.09.2021.
+
+Stock, J. H., & Watson, M. W. (2015). "Introduction to econometrics" (updated 3rd ed.) Pearson.
+
+Vins, O. (2008). "How politics influence state-owned banks: the case of German savings banks" Working Paper Series: Finance & Accounting.
+
+Wooldridge, J. M. (2016). "Introductory econometrics: A modern approach" (6th ed.) Cengage learning.
+
+
+### R Packages
+
+Gaure, S. (2021): lfe. "Linear Group Fixed Effects" R package version 2.8-6. https://CRAN.R-project.org/package=lfe
+
+Hlavac, M. (2018). stargazer. "Well-Formatted Regression and Summary Statistics Tables" R package version 5.2.1. https://CRAN.R-project.org/package=stargazer
+
+Klik, M. (2020). fst. "Lightning Fast Serialization of Data Frames" R package version 0.9.4. https://CRAN.R-project.org/package=fst
+
+Kranz, S. (2020). RTutor. "Interactive R problem sets with automatic testing of solutions and automatic hints" R package version 2020.11.25. https://github.com/skranz/RTutor
+
+Pedersen, T. L. (2020). patchwork. "The Composer of Plots" R package version 1.1.1. https://CRAN.R-project.org/package=patchwork
+
+Wickham, H. (2020). ggplot2. "Elegant graphics for data analysis" R package version 3.3.3. https://CRAN.R-project.org/package=ggplot2
+
+Wickham, H., Franc&#x0327;ois, R., Henry, L., & M&uuml;ller, K. (2021). dplyr. "A grammar of data manipulation" R package version 1.0.6. https://CRAN.R-project.org/package=dplyr

@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1632756877393.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2967032009",
+    "id" : "CCCC9273",
+    "lastKnownWriteTime" : 1632757538,
+    "last_content_update" : 1632757538865,
+    "path" : "~/Masterarbeit/githubDeploy.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "28,0",
+        "scrollLine" : "13"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
