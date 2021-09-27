@@ -25,9 +25,9 @@ Author: Markus Reichart
 
 Welcome to this interactive RTutor problem set which is part of my master thesis at Ulm University. The thesis is based on the paper **"Electoral Cycles in Savings Bank Lending"**, published in 2017 by Florian Englmaier and Till Stowasser in the Journal of the European Economic Association. The article as well as the data are available online <a href="https://academic.oup.com/jeea/article/15/2/296/2691493?login=true" target="_blank">here</a>.
 
-The problem set is published on the following websites: ####links aktualisieren####
-- `Github`: https://github.com/skranz/RTutor
-- `Shinyapps`: https://markusreichart.shinyapps.io/RTutorExample/
+The problem set is published on the following websites:
+- `Github`: https://github.com/mareichart/RTutorElectionsAndBankLending
+- `Shinyapps`: https://markusreichart.shinyapps.io/RTutorElectionsAndBankLending
 
 In Germany, governing politicians at county level have strong ties to local savings banks (German: "Sparkassen"). By law, the political representative of the savings bank's owner is the Chairman of both the Board of Directors and the Credit Committee of the bank (cf. e.g. Section 14 (1) Sentence 1 & Section 22 (1) Sentence 1, Sparkassengesetz BW). Since the savings banks are predominantly owned by the counties (rural counties and urban municipalities), this position is mostly held by the political representative of the county. This allows politicians to influence the lending behavior of the savings bank in their constituency. It raises the question: Do politicians use this power to their advantage? For example, they could increase lending before an upcoming county election in order to improve the economic condition, voter sentiment and ultimately their chances of re-election.
 
