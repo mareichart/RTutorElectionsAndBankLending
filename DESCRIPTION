@@ -1,0 +1,12 @@
+Package: RTutorElectionsAndBankLending
+Type: Package
+Title: RTutor problem set ElectionsAndBankLending
+Version: 0.1
+Date: 2021-27-09
+Author: Markus Reichart
+Maintainer: Markus Reichart <m.reichart94@googlemail.com>
+Description: RTutor problem set ElectionsAndBankLending
+License: Not yet licensed by the author. The default suggestion for licensing is
+	Problem set content: Creative Commons (CC BY-SA)
+	Package code: GPL >= 2.0
+Depends: RTutor, dplyr, lfe, stargazer, ggplot2, fst, patchwork
