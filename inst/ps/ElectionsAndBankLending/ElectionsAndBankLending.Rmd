@@ -470,7 +470,19 @@ We see that savings bank lending is generally lower than those of cooperative ba
 
 Unfortunately, the anticipated increase in SB lending in the election year cannot be confirmed with this plot. SBs even recorded a slight decline in lending from the pre-election year to the election year. Overall, however, lending in the election year is still about average. 
 
-So how do we interpret this chart in terms of the difference-in-differences approach? In the election year and the year after, lending generally decreased. We derive this statement from the decline in CB lending. Yet we do not interpret this decline as a causal effect of elections, but as a trend over time (or simply as a coincidence). However, we interpret the observation that savings bank lending hardly declined in the same period as a causal effect of elections. If elections had no impact on savings banks' lending, we would have expected a similar decline for them as for cooperative banks. We use the difference-in-differences approach to calculate how much the development of SB and CB lending differs. As a result, we obtain the causal effect of elections on savings bank lending. 
+
+Quiz: Based on `plot1`, what causal effect of elections on savings bank lending would you expect?
+
+[1]: a negative one
+[2]: around zero
+[3]: a positive one
+
+```{r eval=FALSE}
+# Run line to answer the quiz above
+answer.quiz("causal effect plot1")
+```
+
+We can interpret `plot1` in terms of the difference-in-differences approach as follows: In the election year and the year after, lending generally decreased. We derive this statement from the decline in CB lending. Yet we do not interpret this decline as a causal effect of elections, but as a trend over time (or simply as a coincidence). However, we interpret the observation that savings bank lending hardly declined in the same period as a causal effect of elections. If elections had no impact on savings banks' lending, we would have expected a similar decline for them as for cooperative banks. We use the difference-in-differences approach to calculate how much the development of SB and CB lending differs. As a result, we obtain the causal effect of elections on savings bank lending. 
 
 Again: This approach is based on the parallel trend assumption. Since the above chart only covers 5 points in time, we cannot use it to make a meaningful statement about the assumption of parallel trends. However, since the other states besides Bavaria also show little parallelism (4 of them are shown in the next chapter), I think it is debatable whether the parallel trends assumption is fulfilled for all states.
 
@@ -763,7 +775,7 @@ ggplot(data=mdat, aes(x=Elec, y=mean, color=BankType))+
 
 ```
 
-Quiz: What does the coefficient beta 0 measure?
+Quiz: What does the coefficient $\beta_0$ measure?
 
 [1]: the average lending of CBs
 [2]: the average lending of SBs
@@ -778,7 +790,7 @@ answer.quiz("Beta 0")
 $\hat\beta_{0}$ is the intercept of the regression and measures the average lending of cooperative banks in non-election years. The coefficient has the value $-0.3176$.
 
 
-Quiz: What does the coefficient beta 1 measure?
+Quiz: What does the coefficient $\beta_1$ measure?
 
 [1]: the gap between non-election year lending and election year lending of CBs
 [2]: the gap between non-election year lending and election year lending of SBs
@@ -794,7 +806,7 @@ answer.quiz("Beta 1")
 $\hat\beta_{1}$ is the coefficient of `Elec` and measures the difference between non-election year and election year lending of cooperative banks. The coefficient has the value $-0.0138$.
 
 
-Quiz: What does the coefficient beta 2 measure?
+Quiz: What does the coefficient $\beta_2$ measure?
 
 [1]: the gap between non-election year lending and election year lending of CBs
 [2]: the gap between non-election year lending and election year lending of SBs
@@ -827,7 +839,7 @@ This very simplified regression shows a significant positive causal effect of co
 dat <- read.fst("dataset.fst")
 ```
 
-In this chapter we will extend the simple regression from the previous chapter step by step. The goal is to end up with a complete regression that answers the main hypothesis of the paper. First, year and state fixed effects are included in the regression. Thereafter, a set of control variables for banks and counties is added. The authors' goal is to increase the predictability of `BankLoans_Norm_LOG` by adding these variables. Moreover, they thereby reduce the risk of omitted variable bias, which occurs when a variable that is correlated with the dependent variable (as well as with an explanatory variable) is omitted from the regression. The last step is to cluster the standard errors.
+In this chapter we will extend the simple regression from the previous chapter step by step. The goal is to end up with a complete regression that answers the main hypothesis of the paper. First, year and state fixed effects are included in the regression. Thereafter, a set of control variables for banks and counties is added. The authors' goal is to increase the predictability of `BankLoans_Norm_LOG` by adding these variables. They thereby also reduce the risk of omitted variable bias, which occurs when a variable that is correlated with the dependent variable (as well as with an explanatory variable) is omitted from the regression. As addressed, we hope that these variables partially explain the difference in lending behavior between SBs and CBs over time, thus weakening the parallel trends assumption. The last step is to cluster the standard errors.
 
 ### Fixed effects
 Let us start by including fixed effects to the regression. The authors include year fixed effects to account for any national trends or annual shocks such as the financial crisis. You can think of it as adding a dummy variable to the regression for every year in the dataset. This way, we account for the unobserved effect that is constant across entities but varies over time (cf. Stock & Watson, 2015, p.409). 
@@ -1062,7 +1074,20 @@ The results of these regressions indicate that the increase in savings bank lend
 dat <- read.fst("dataset.fst")
 ```
 
-In addition to the overall effect of elections on savings bank lending, the authors also examined the role that the contestedness of an election plays in this effect. Their idea is that politicians are more likely to increase savings bank lending when a close result is anticipated in the run-up to the election. If incumbents knew in advance that they were certain to win or lose the election, it would be unnecessary for them to increase lending. However, if a close election outcome is expected in advance, additional votes are more valuable because they could decide the outcome of the election. In this case, politicians have a higher incentive to increase savings bank lending.
+In addition to the overall effect of elections on savings bank lending, the authors also examined the role that the contestedness of an election plays in this effect. 
+
+
+Quiz: What do you think? Is election-induced lending higher or lower for close elections compared to elections in general?
+
+[1]: higher
+[2]: lower
+
+```{r eval=FALSE}
+# Run line to answer the quiz above
+answer.quiz("contestedness")
+```
+
+We think that politicians are more likely to increase savings bank lending when a close result is anticipated in the run-up to the election. If incumbents knew in advance that they were certain to win or lose the election, it would be unnecessary for them to increase lending. However, if a close election outcome is expected in advance, additional votes are more valuable because they could decide the outcome of the election. In this case, politicians have a higher incentive to increase savings bank lending.
 
 ### A measure of contestedness
 There are usually no polls before county elections, as we know them from the run-up to federal elections.  Instead, we utilize the election result to assess whether an election was contested or not. If it was close, we assume that the election was also perceived as close in the run-up. The authors decide whether an election result is close or not based on the winning party's share of the vote and its margin of victory. This information about the closeness of an election is stored in the variable `ElecCloseIndex3_MED`. If the variable takes the value $1$, we consider the election to be contested. If the variable takes the value $0$, it is not contested.
@@ -1209,15 +1234,14 @@ In exercise 1, we presented the data that we used in the problem set. It consist
 
 In Exercise 2, we introduced the underlying principle on which all of our subsequent analyses were based: the difference-in-differences approach. Savings banks represent the treatment group and are compared with cooperative banks which form the control group. County elections are the treatment. As a first example, we focused on the Bavarian banks and calculated the DiD estimator just for them. Throughout, we concluded that the assumption of parallel trends is probably not fulfilled. We then extended the example to all German banks. In the process, we made the surprising observation that lending by cooperative banks declined in election years. Since there are no obvious reasons for this, we took a closer look at the timing of the elections. We concluded that the high number of elections in 2009 coupled with the sharp drop in lending that year triggered the overall decline.
 
-In Exercise 3 we again focused on the DiD approach, yet we now calculated the causal effect of elections on savings bank lending via linear regression. First, we established the basic specification of the regression by reconstructing the simple example from Exercise 2.2. We then added fixed effects and a number of additional control variables to the regression. We hope that these variables partially explain the difference in lending behavior between SBs and CBs over time, thus weakening the assumption of parallel trends. We also clustered the standard errors on the state level. We obtained that the causal effect of county elections on SB lending is around 0.015, or 1.5%. This coefficient is significant at the 1% level. Thus, county elections have a positive impact on savings bank lending.
+In Exercise 3 we again focused on the DiD approach, yet we now calculated the causal effect of elections on savings bank lending via linear regression. First, we established the basic specification of the regression by reconstructing the simple example from Exercise 2.2. We then added fixed effects and a number of additional control variables to the regression. We also clustered the standard errors on the state level. We obtained that the causal effect of county elections on SB lending is around 0.015, or 1.5%. This coefficient is significant at the 1% level. Thus, county elections have a positive impact on savings bank lending.
 
 Last but not least, we did some additional analysis in Exercise 4. First, we examined the impact of elections on lending in other years of the electorial cycle. We found out that elections have a positive causal effect on savings bank lending in the pre-election year. The effect on lending 2 years after the election is negative. We then examined the role of electoral competition. We found that the impact of elections on savings bank lending is about twice as large when only contested elections are sampled. Finally, we analyzed the impact of elections on savings banks' default rates. The results were significant when we considered only those elections for which we expected the largest election-induced lending. Accordingly, those elections lead to an increase in the loan default rate of about 1% 3 to 4 years after the election.
 
 We found evidence that there are election-induced lending cycles in Germany. 
 
 ### Related literature
-There are numerous empirical studies that have also examined electoral cycles in Germany like this. Garmann (2017) analyzed election cycles in public administration decisions of German municipalities. For example, the author found that significantly more building permits are issued by the public administration in election years. Another paper that examines electoral cycles at the German municipal level is Krause (2019). The author examined communal fees and found that they increase at a below-average rate in election years and at an above-average rate directly after elections. Mechtel and Potrafke (2013) examined labor market policies before state elections in Germany. Governments can use Active Labor Market Policies (ALMP) in the form
-of job creation schemes to reduce the unemployment rate and thereby try to increase their popularity among the population. The authors found that this approach was particularly forced in election years. Therefore, the growth rate of workers enrolled in job creation schemes increased in election years by approximately 4 percentage points (cf. Mechtel & Potrafke, 2013, p.187).
+There are numerous empirical studies that have also examined electoral cycles in Germany like this. Garmann (2017) analyzed election cycles in public administration decisions of German municipalities. For example, the author found that significantly more building permits are issued by the public administration in election years. Another paper that examines electoral cycles at the German municipal level is Krause (2019). The author examined communal fees and found that they increase at a below-average rate in election years and at an above-average rate directly after elections. Mechtel and Potrafke (2013) examined labor market policies before state elections in Germany. Governments can use Active Labor Market Policies (ALMP) in the form of job creation schemes to reduce the unemployment rate and thereby try to increase their popularity among the population. The authors found that this approach was particularly forced in election years. Therefore, the growth rate of workers enrolled in job creation schemes increased in election years by approximately 4 percentage points (cf. Mechtel & Potrafke, 2013, p.187).
 
 
 ## Exercise References
